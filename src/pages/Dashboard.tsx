@@ -22,23 +22,39 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase.from('monte_reports').select('status');
-      if (data) {
-        setStats({
-          total: data.length,
-          pending: data.filter(r => r.status === 'pending').length,
-          analyzed: data.filter(r => r.status !== 'pending' && r.status !== 'analyzing').length,
-          ready: data.filter(r => r.status === 'ready').length,
-          approved: data.filter(r => r.status === 'approved').length,
-          rejected: data.filter(r => r.status === 'rejected').length,
-        });
-      }
-      const { data: recent } = await supabase
+      const { data: all } = await supabase
         .from('monte_reports')
-        .select('id, test_date, status, lab_name, monte_patients(hn, first_name, last_name)')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      setRecentReports(recent || []);
+        .select('id, test_date, status, lab_name, patient_id, created_at, monte_patients(hn, first_name, last_name)')
+        .order('created_at', { ascending: false });
+
+      if (all) {
+        const byPatient = new Map<string, any[]>();
+        for (const r of all) {
+          const key = r.patient_id || r.id;
+          if (!byPatient.has(key)) byPatient.set(key, []);
+          byPatient.get(key)!.push(r);
+        }
+        const patients = [...byPatient.values()];
+        const bestStatus = (reps: any[]) => {
+          if (reps.some(r => r.status === 'approved')) return 'approved';
+          if (reps.some(r => r.status === 'ready')) return 'ready';
+          if (reps.some(r => r.status === 'analyzing')) return 'analyzing';
+          return 'pending';
+        };
+        setStats({
+          total: patients.length,
+          pending: patients.filter(p => bestStatus(p) === 'pending').length,
+          analyzed: patients.filter(p => ['ready', 'approved'].includes(bestStatus(p))).length,
+          ready: patients.filter(p => bestStatus(p) === 'ready').length,
+          approved: patients.filter(p => bestStatus(p) === 'approved').length,
+          rejected: patients.filter(p => p.some((r: any) => r.status === 'rejected')).length,
+        });
+        const grouped = patients.map(reps => {
+          const first = reps[0];
+          return { ...first, status: bestStatus(reps), pdfCount: reps.length };
+        });
+        setRecentReports(grouped.slice(0, 10));
+      }
       setLoading(false);
     };
     fetch();
