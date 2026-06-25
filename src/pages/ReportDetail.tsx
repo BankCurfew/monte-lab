@@ -2,38 +2,10 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, FileText, CheckCircle, XCircle, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, XCircle, Download, Loader2, Edit2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { MonteAnalysisView } from '@/components/reports/MonteAnalysisView';
 import { generateMonteAnalysis } from '@/lib/monte-analysis';
-
-function InlineHNEdit({ patientId, currentHN }: { patientId: string; currentHN: string }) {
-  const [editing, setEditing] = useState(false);
-  const [hn, setHn] = useState(currentHN || '');
-
-  if (!editing) {
-    return (
-      <span className="cursor-pointer hover:text-[#006B6E] hover:underline" onClick={() => setEditing(true)} title="คลิกเพื่อแก้ไข HN">
-        {currentHN || 'ไม่ระบุ'} ✏️
-      </span>
-    );
-  }
-
-  const save = async () => {
-    const { error } = await supabase.from('monte_patients').update({ hn }).eq('id', patientId);
-    if (error) toast.error(error.message);
-    else { toast.success('อัพเดท HN แล้ว'); setEditing(false); }
-  };
-
-  return (
-    <span className="inline-flex items-center gap-1">
-      <input value={hn} onChange={e => setHn(e.target.value)} className="px-1 py-0.5 border rounded text-sm w-24"
-        autoFocus onKeyDown={e => e.key === 'Enter' && save()} />
-      <button onClick={save} className="text-xs text-[#006B6E] hover:underline">บันทึก</button>
-      <button onClick={() => setEditing(false)} className="text-xs text-gray-400">ยกเลิก</button>
-    </span>
-  );
-}
 
 const statusLabel: Record<string, string> = {
   pending: 'รอดำเนินการ', analyzing: 'กำลังวิเคราะห์', ready: 'รออนุมัติ',
@@ -95,8 +67,35 @@ export default function ReportDetail() {
 
   if (!report) return <div className="text-center py-12 text-gray-400">กำลังโหลด...</div>;
 
-  const patient = report.monte_patients;
+  const [patient, setPatient] = useState(report.monte_patients);
+  const [editingPatient, setEditingPatient] = useState(false);
+  const [patientForm, setPatientForm] = useState({
+    first_name: report.monte_patients?.first_name || '',
+    last_name: report.monte_patients?.last_name || '',
+    hn: report.monte_patients?.hn || '',
+    date_of_birth: report.monte_patients?.date_of_birth || '',
+    gender: report.monte_patients?.gender || '',
+    phone: report.monte_patients?.phone || '',
+  });
   const parsed = aggregatedParsed;
+
+  const handleSavePatient = async () => {
+    const { error } = await supabase.from('monte_patients').update({
+      first_name: patientForm.first_name,
+      last_name: patientForm.last_name,
+      hn: patientForm.hn,
+      date_of_birth: patientForm.date_of_birth || null,
+      gender: patientForm.gender || null,
+      phone: patientForm.phone || null,
+    }).eq('id', report.patient_id);
+    if (error) toast.error(error.message);
+    else {
+      const updated = { ...patient, ...patientForm };
+      setPatient(updated);
+      setEditingPatient(false);
+      toast.success('บันทึกข้อมูลผู้ป่วยแล้ว');
+    }
+  };
 
   const handleApprove = async () => {
     // Find doctor record for current user
@@ -210,14 +209,67 @@ export default function ReportDetail() {
               <div>
                 <h2 className="text-xl font-bold text-gray-800">ผลตรวจเลือด — {patient?.first_name} {patient?.last_name}</h2>
                 <p className="text-sm text-gray-500">
-                  HN: <InlineHNEdit patientId={report.patient_id} currentHN={patient?.hn} /> | วันที่ตรวจ: {report.test_date} | LAB: {report.lab_name || '-'}
+                  HN: {patient?.hn} | วันที่ตรวจ: {report.test_date} | LAB: {report.lab_name || '-'}
                   {allPatientReports.length > 1 && <span className="ml-2 text-[#006B6E] font-medium">({allPatientReports.length} รายงานรวม)</span>}
                 </p>
               </div>
-              <span className={`text-xs px-3 py-1 rounded-full ${statusColor[report.status]}`}>
-                {statusLabel[report.status]}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs px-3 py-1 rounded-full ${statusColor[report.status]}`}>
+                  {statusLabel[report.status]}
+                </span>
+                <button onClick={() => setEditingPatient(!editingPatient)}
+                  className="p-1.5 text-[#94A3B8] hover:text-[#006B6E] hover:bg-[#E0F5F5] rounded-lg" title="แก้ไขข้อมูลผู้ป่วย">
+                  <Edit2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
+
+            {editingPatient && (
+              <div className="border border-[#E2E8F0] rounded-xl p-4 mb-4 bg-[#F8FAFB]">
+                <p className="text-xs font-medium text-[#006B6E] mb-3">แก้ไขข้อมูลผู้ป่วย (จะอัพเดทใน PDF ด้วย)</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-[#94A3B8] mb-1">ชื่อ</label>
+                    <input value={patientForm.first_name} onChange={e => setPatientForm({ ...patientForm, first_name: e.target.value })}
+                      className="w-full px-3 py-1.5 border rounded-lg text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#94A3B8] mb-1">นามสกุล</label>
+                    <input value={patientForm.last_name} onChange={e => setPatientForm({ ...patientForm, last_name: e.target.value })}
+                      className="w-full px-3 py-1.5 border rounded-lg text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#94A3B8] mb-1">HN</label>
+                    <input value={patientForm.hn} onChange={e => setPatientForm({ ...patientForm, hn: e.target.value })}
+                      className="w-full px-3 py-1.5 border rounded-lg text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#94A3B8] mb-1">เพศ</label>
+                    <select value={patientForm.gender} onChange={e => setPatientForm({ ...patientForm, gender: e.target.value })}
+                      className="w-full px-3 py-1.5 border rounded-lg text-sm">
+                      <option value="">-</option><option value="male">ชาย</option><option value="female">หญิง</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#94A3B8] mb-1">วันเกิด</label>
+                    <input type="date" value={patientForm.date_of_birth} onChange={e => setPatientForm({ ...patientForm, date_of_birth: e.target.value })}
+                      className="w-full px-3 py-1.5 border rounded-lg text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#94A3B8] mb-1">โทรศัพท์</label>
+                    <input value={patientForm.phone} onChange={e => setPatientForm({ ...patientForm, phone: e.target.value })}
+                      className="w-full px-3 py-1.5 border rounded-lg text-sm" />
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-3 justify-end">
+                  <button onClick={() => setEditingPatient(false)} className="px-3 py-1.5 text-sm text-gray-500">ยกเลิก</button>
+                  <button onClick={handleSavePatient} className="flex items-center gap-1.5 px-4 py-1.5 bg-[#00868A] text-white rounded-lg text-sm hover:bg-[#006B6E]">
+                    <Save className="h-3.5 w-3.5" /> บันทึก
+                  </button>
+                </div>
+              </div>
+            )}
+
             {!monteAnalysis && renderBloodTests()}
           </div>
 
