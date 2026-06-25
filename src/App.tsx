@@ -15,6 +15,7 @@ const ReportDetail = lazy(() => import('@/pages/ReportDetail'));
 const UploadReport = lazy(() => import('@/pages/UploadReport'));
 const Patients = lazy(() => import('@/pages/Patients'));
 const Settings = lazy(() => import('@/pages/Settings'));
+const PatientDetail = lazy(() => import('@/pages/PatientDetail'));
 
 const queryClient = new QueryClient();
 
@@ -38,7 +39,8 @@ export default function App() {
                 <Route path="reports/:id" element={<ReportDetail />} />
                 <Route path="upload" element={<RoleGuard roles={['admin', 'doctor']}><UploadReport /></RoleGuard>} />
                 <Route path="patients" element={<RoleGuard roles={['admin', 'doctor']}><Patients /></RoleGuard>} />
-                <Route path="settings" element={<RoleGuard roles={['admin']}><Settings /></RoleGuard>} />
+                <Route path="patients/:id" element={<RoleGuard roles={['admin', 'doctor']}><PatientDetail /></RoleGuard>} />
+                <Route path="settings" element={<RoleGuard roles={['admin', 'doctor']}><Settings /></RoleGuard>} />
               </Route>
             </Routes>
           </Suspense>

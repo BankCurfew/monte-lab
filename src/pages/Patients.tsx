@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Search } from 'lucide-react';
 import { toast } from 'sonner';
@@ -151,7 +152,7 @@ export default function Patients() {
           <tbody>
             {filtered.map(p => (
               <tr key={p.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-3 text-sm font-medium text-[#006B6E]">{p.hn}</td>
+                <td className="px-4 py-3 text-sm font-medium"><Link to={`/patients/${p.id}`} className="text-[#006B6E] hover:underline">{p.hn}</Link></td>
                 <td className="px-4 py-3 text-sm">{p.first_name} {p.last_name}</td>
                 <td className="px-4 py-3 text-sm">{p.gender === 'male' ? 'ชาย' : p.gender === 'female' ? 'หญิง' : p.gender || '-'}</td>
                 <td className="px-4 py-3 text-sm">{p.date_of_birth || '-'}</td>

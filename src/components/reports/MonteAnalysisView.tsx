@@ -21,7 +21,7 @@ const S = {
 
 export function MonteAnalysisView({ analysis, patient, report, allReports, parsedValues, doctor }: {
   analysis: MonteAnalysis;
-  patient?: { hn?: string; first_name?: string; last_name?: string; date_of_birth?: string; gender?: string };
+  patient?: { hn?: string; first_name?: string; last_name?: string; date_of_birth?: string | null; gender?: string | null };
   report?: { test_date?: string; lab_name?: string; status?: string; approved_at?: string };
   allReports?: { test_date?: string; lab_name?: string }[];
   parsedValues?: Record<string, Record<string, ParsedTest>>;
