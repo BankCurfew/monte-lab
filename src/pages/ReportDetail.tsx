@@ -64,7 +64,7 @@ export default function ReportDetail() {
 
     return groups.map(([group, tests]: [string, any]) => (
       <div key={group} className="mb-4">
-        <h4 className="text-sm font-semibold text-[#00868A] uppercase mb-2">{group}</h4>
+        <h4 className="text-sm font-semibold text-[#006B6E] uppercase mb-2">{group}</h4>
         <table className="w-full text-sm">
           <thead><tr className="bg-gray-50">
             <th className="px-3 py-2 text-left text-xs text-gray-500">รายการ</th>
@@ -135,7 +135,7 @@ export default function ReportDetail() {
         <div className="space-y-4">
           {report.raw_pdf_url && (
             <a href={report.raw_pdf_url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-2 p-4 bg-white rounded-lg shadow hover:bg-gray-50 text-sm text-[#00868A]">
+              className="flex items-center gap-2 p-4 bg-white rounded-lg shadow hover:bg-gray-50 text-sm text-[#006B6E]">
               <FileText className="h-5 w-5" /> ดู PDF ต้นฉบับ
             </a>
           )}

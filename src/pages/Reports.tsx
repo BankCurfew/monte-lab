@@ -76,7 +76,7 @@ export default function Reports() {
             {filtered.map(r => (
               <tr key={r.id} className="border-t hover:bg-gray-50">
                 <td className="px-4 py-3 text-sm">
-                  <Link to={`/reports/${r.id}`} className="text-[#00868A] hover:underline font-medium">{r.monte_patients?.hn}</Link>
+                  <Link to={`/reports/${r.id}`} className="text-[#006B6E] hover:underline font-medium">{r.monte_patients?.hn}</Link>
                 </td>
                 <td className="px-4 py-3 text-sm">{r.monte_patients?.first_name} {r.monte_patients?.last_name}</td>
                 <td className="px-4 py-3 text-sm">{r.test_date}</td>

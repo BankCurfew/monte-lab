@@ -1,7 +1,8 @@
 export const COLORS = {
-  primary: '#00868A',
+  primary: '#00868A',      // buttons, large headings only
+  primaryText: '#006B6E',  // body text on white (WCAG AA 4.5:1 pass)
   primaryLight: '#E0F5F5',
-  primaryDark: '#006B6E',
+  primaryDark: '#005255',
   surface: '#FFFFFF',
   background: '#F8FAFB',
   textPrimary: '#1A2B3C',

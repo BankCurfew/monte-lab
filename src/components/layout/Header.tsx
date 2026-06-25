@@ -16,7 +16,7 @@ export function Header() {
         <NotificationBell />
         <div className="text-right hidden sm:block">
           <p className="text-sm font-medium text-gray-700 truncate max-w-[200px]">{user?.email}</p>
-          <p className="text-xs text-[#00868A]">{role ? roleLabel[role] || role : ''}</p>
+          <p className="text-xs text-[#006B6E]">{role ? roleLabel[role] || role : ''}</p>
         </div>
         <div className="sm:hidden w-8 h-8 bg-[#00868A] rounded-full flex items-center justify-center text-white text-xs font-bold">
           {user?.email?.[0]?.toUpperCase() || 'U'}

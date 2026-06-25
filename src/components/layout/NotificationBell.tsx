@@ -56,7 +56,7 @@ export function NotificationBell() {
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <span className="font-semibold text-sm text-gray-700">การแจ้งเตือน</span>
             {unreadCount > 0 && (
-              <button onClick={markAllRead} className="flex items-center gap-1 text-xs text-[#00868A] hover:underline">
+              <button onClick={markAllRead} className="flex items-center gap-1 text-xs text-[#006B6E] hover:underline">
                 <CheckCheck className="h-3 w-3" /> อ่านทั้งหมด
               </button>
             )}

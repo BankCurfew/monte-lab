@@ -43,7 +43,7 @@ export default function Dashboard() {
   }, []);
 
   const statCards = [
-    { label: 'ทั้งหมด', value: stats.total, icon: FileText, borderColor: 'border-l-[#00868A]', iconBg: 'bg-[#E0F5F5]', iconColor: 'text-[#00868A]' },
+    { label: 'ทั้งหมด', value: stats.total, icon: FileText, borderColor: 'border-l-[#00868A]', iconBg: 'bg-[#E0F5F5]', iconColor: 'text-[#006B6E]' },
     { label: 'รอดำเนินการ', value: stats.pending, icon: Clock, borderColor: 'border-l-amber-400', iconBg: 'bg-amber-50', iconColor: 'text-amber-600' },
     { label: 'รออนุมัติ', value: stats.ready, icon: AlertCircle, borderColor: 'border-l-orange-400', iconBg: 'bg-orange-50', iconColor: 'text-orange-600' },
     { label: 'อนุมัติแล้ว', value: stats.approved, icon: CheckCircle, borderColor: 'border-l-emerald-400', iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
@@ -102,7 +102,7 @@ export default function Dashboard() {
                 {recentReports.map(report => (
                   <tr key={report.id} className="border-t border-[#E2E8F0] hover:bg-[#F8FAFB] cursor-pointer" onClick={() => window.location.href = `/reports/${report.id}`}>
                     <td className="px-4 lg:px-6 py-3.5 text-sm">
-                      <Link to={`/reports/${report.id}`} className="text-[#00868A] font-medium hover:underline">{report.monte_patients?.hn}</Link>
+                      <Link to={`/reports/${report.id}`} className="text-[#006B6E] font-medium hover:underline">{report.monte_patients?.hn}</Link>
                     </td>
                     <td className="px-4 lg:px-6 py-3.5 text-sm text-[#1A2B3C]">{report.monte_patients?.first_name} {report.monte_patients?.last_name}</td>
                     <td className="px-4 lg:px-6 py-3.5 text-sm text-[#5A6B7C]">{report.test_date}</td>
@@ -119,7 +119,7 @@ export default function Dashboard() {
                 <Link key={report.id} to={`/reports/${report.id}`} className="block px-4 py-3.5 hover:bg-[#F8FAFB]">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-sm font-medium text-[#00868A]">{report.monte_patients?.hn}</p>
+                      <p className="text-sm font-medium text-[#006B6E]">{report.monte_patients?.hn}</p>
                       <p className="text-sm text-[#1A2B3C]">{report.monte_patients?.first_name} {report.monte_patients?.last_name}</p>
                       <p className="text-xs text-[#94A3B8] mt-0.5">{report.test_date} · {report.lab_name || '-'}</p>
                     </div>

@@ -151,13 +151,13 @@ export default function Patients() {
           <tbody>
             {filtered.map(p => (
               <tr key={p.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-3 text-sm font-medium text-[#00868A]">{p.hn}</td>
+                <td className="px-4 py-3 text-sm font-medium text-[#006B6E]">{p.hn}</td>
                 <td className="px-4 py-3 text-sm">{p.first_name} {p.last_name}</td>
                 <td className="px-4 py-3 text-sm">{p.gender === 'male' ? 'ชาย' : p.gender === 'female' ? 'หญิง' : p.gender || '-'}</td>
                 <td className="px-4 py-3 text-sm">{p.date_of_birth || '-'}</td>
                 <td className="px-4 py-3 text-sm">{p.phone || '-'}</td>
                 <td className="px-4 py-3 text-sm">
-                  <button onClick={() => handleEdit(p)} className="text-[#00868A] hover:underline text-xs">แก้ไข</button>
+                  <button onClick={() => handleEdit(p)} className="text-[#006B6E] hover:underline text-xs">แก้ไข</button>
                 </td>
               </tr>
             ))}

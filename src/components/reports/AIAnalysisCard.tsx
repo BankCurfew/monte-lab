@@ -13,7 +13,7 @@ export function AIAnalysisCard({ analysis }: AIAnalysisCardProps) {
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-gray-700 flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-[#00868A]" />
+          <AlertCircle className="h-5 w-5 text-[#006B6E]" />
           การวิเคราะห์ AI
         </h3>
         <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${scoreBg}`}>
@@ -52,7 +52,7 @@ export function AIAnalysisCard({ analysis }: AIAnalysisCardProps) {
           <ul className="space-y-1">
             {analysis.recommendations.map((rec, i) => (
               <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
-                <span className="text-[#00868A] mt-0.5">•</span>
+                <span className="text-[#006B6E] mt-0.5">•</span>
                 {rec}
               </li>
             ))}
