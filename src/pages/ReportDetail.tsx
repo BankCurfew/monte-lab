@@ -12,10 +12,10 @@ function ShareLinkButton({ reportId, patientId, patientDob }: { reportId: string
   const [creating, setCreating] = useState(false);
 
   const handleCreate = async () => {
-    if (!patientDob) { toast.error('กรุณาตั้งวันเกิดผู้ป่วยก่อน (ใช้เป็นรหัสผ่าน)'); return; }
+    if (!patientDob) { toast.error('กรุณาตั้งวันเกิดลูกค้าก่อน (ใช้เป็นรหัสผ่าน)'); return; }
     setCreating(true);
     const dob = new Date(patientDob);
-    const pwd = `${String(dob.getDate()).padStart(2, '0')}/${String(dob.getMonth() + 1).padStart(2, '0')}/${dob.getFullYear()}`;
+    const pwd = `${String(dob.getDate()).padStart(2, '0')}${String(dob.getMonth() + 1).padStart(2, '0')}${dob.getFullYear()}`;
 
     const { data, error } = await supabase.from('monte_share_links').insert({
       report_id: reportId,
@@ -155,7 +155,7 @@ export default function ReportDetail() {
       const updated = { ...patient, ...patientForm };
       setPatient(updated);
       setEditingPatient(false);
-      toast.success('บันทึกข้อมูลผู้ป่วยแล้ว');
+      toast.success('บันทึกข้อมูลลูกค้าแล้ว');
     }
   };
 
@@ -317,7 +317,7 @@ export default function ReportDetail() {
                   {statusLabel[report.status]}
                 </span>
                 <button onClick={() => setEditingPatient(!editingPatient)}
-                  className="p-1.5 text-[#94A3B8] hover:text-[#006B6E] hover:bg-[#E0F5F5] rounded-lg" title="แก้ไขข้อมูลผู้ป่วย">
+                  className="p-1.5 text-[#94A3B8] hover:text-[#006B6E] hover:bg-[#E0F5F5] rounded-lg" title="แก้ไขข้อมูลลูกค้า">
                   <Edit2 className="h-4 w-4" />
                 </button>
               </div>
@@ -325,7 +325,7 @@ export default function ReportDetail() {
 
             {editingPatient && (
               <div className="border border-[#E2E8F0] rounded-xl p-4 mb-4 bg-[#F8FAFB]">
-                <p className="text-xs font-medium text-[#006B6E] mb-3">แก้ไขข้อมูลผู้ป่วย (จะอัพเดทใน PDF ด้วย)</p>
+                <p className="text-xs font-medium text-[#006B6E] mb-3">แก้ไขข้อมูลลูกค้า (จะอัพเดทใน PDF ด้วย)</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-[#94A3B8] mb-1">ชื่อ</label>

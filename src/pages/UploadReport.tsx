@@ -252,7 +252,7 @@ export default function UploadReport() {
           patientId = newPatient?.id || null;
         }
 
-        if (!patientId) throw new Error('ไม่สามารถสร้างข้อมูลผู้ป่วย');
+        if (!patientId) throw new Error('ไม่สามารถสร้างข้อมูลลูกค้า');
 
         // Set status to analyzing in DB
         const { data: report, error: insertError } = await supabase

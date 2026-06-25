@@ -49,10 +49,18 @@ export default function SharedReport() {
       setError('ลิงก์หมดอายุแล้ว'); setStep('password'); return;
     }
 
-    const formatted = password.replace(/\//g, '/');
-    const { data: verify } = await supabase.rpc('verify_share_password', { link_id: link.id, pwd: formatted });
+    const digits = password.replace(/\D/g, '');
+    const tryFormats = [password, digits];
+    if (digits.length === 8) {
+      tryFormats.push(`${digits.slice(0,2)}/${digits.slice(2,4)}/${digits.slice(4)}`);
+    }
+    let verified = false;
+    for (const pwd of tryFormats) {
+      const { data } = await supabase.rpc('verify_share_password', { link_id: link.id, pwd });
+      if (data) { verified = true; break; }
+    }
 
-    if (!verify) { setError('รหัสผ่านไม่ถูกต้อง (ใช้วันเดือนปีเกิด dd/mm/yyyy)'); setStep('password'); return; }
+    if (!verified) { setError('รหัสผ่านไม่ถูกต้อง (ใช้วันเดือนปีเกิด เช่น 06051990)'); setStep('password'); return; }
 
     const { data: pat } = await supabase.from('monte_patients').select('*').eq('id', link.patient_id).single();
     setPatient(pat);
@@ -76,7 +84,8 @@ export default function SharedReport() {
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <img src="/brand/monte-logo-primary.png" alt="Monte" style={{ height: 48, margin: '0 auto 12px' }} />
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1A2B3C' }}>ผลตรวจเลือดของท่าน</h2>
-            <p style={{ fontSize: '13px', color: '#94A3B8', marginTop: 4 }}>กรุณากรอกรหัสผ่านเพื่อดูผล</p>
+            <p style={{ fontSize: '13px', color: '#94A3B8', marginTop: 4 }}>กรุณากรอกรหัสผ่านเพื่อดูผลวิเคราะห์</p>
+            <p style={{ fontSize: '11px', color: '#B0B8C4', marginTop: 8, lineHeight: 1.5 }}>รหัสผ่านคือวันเดือนปีเกิด (ค.ศ.) ของท่าน<br/>ตัวอย่าง: เกิดวันที่ 6 พฤษภาคม 1990 → <strong>06051990</strong></p>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -89,7 +98,7 @@ export default function SharedReport() {
                 type="text"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="dd/mm/yyyy"
+                placeholder="วันเดือนปี เช่น 06051990"
                 style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #E2E8F0', borderRadius: 10, fontSize: '15px', textAlign: 'center', letterSpacing: 2, outline: 'none' }}
                 autoFocus
               />

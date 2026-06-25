@@ -52,11 +52,11 @@ export default function Patients() {
     if (editingId) {
       const { error } = await supabase.from('monte_patients').update(payload).eq('id', editingId);
       if (error) { toast.error(error.message); return; }
-      toast.success('อัพเดทข้อมูลผู้ป่วยแล้ว');
+      toast.success('อัพเดทข้อมูลลูกค้าแล้ว');
     } else {
       const { error } = await supabase.from('monte_patients').insert(payload);
       if (error) { toast.error(error.message); return; }
-      toast.success('เพิ่มผู้ป่วยแล้ว');
+      toast.success('เพิ่มลูกค้าแล้ว');
     }
     resetForm();
     fetchPatients();
@@ -71,9 +71,9 @@ export default function Patients() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">ผู้ป่วย</h2>
+        <h2 className="text-2xl font-bold text-gray-800">ลูกค้า</h2>
         <button onClick={() => { resetForm(); setShowForm(true); }} className="flex items-center gap-2 px-4 py-2 bg-[#00868A] text-white rounded-md hover:bg-[#006d70] text-sm">
-          <Plus className="h-4 w-4" /> เพิ่มผู้ป่วย
+          <Plus className="h-4 w-4" /> เพิ่มลูกค้า
         </button>
       </div>
 
@@ -90,8 +90,8 @@ export default function Patients() {
 
       {showForm && (
         <div className="bg-white rounded-lg shadow mb-6 p-6">
-          <h3 className="font-semibold text-gray-700 mb-4">{editingId ? 'แก้ไขผู้ป่วย' : 'เพิ่มผู้ป่วยใหม่'}</h3>
-          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+          <h3 className="font-semibold text-gray-700 mb-4">{editingId ? 'แก้ไขลูกค้า' : 'เพิ่มลูกค้าใหม่'}</h3>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-600 mb-1">HN *</label>
               <input value={form.hn} onChange={e => setForm({ ...form, hn: e.target.value })} required className="w-full px-3 py-2 border rounded-md text-sm" placeholder="เช่น 69-0181" />
@@ -163,7 +163,7 @@ export default function Patients() {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">ยังไม่มีผู้ป่วย</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">ยังไม่มีลูกค้า</td></tr>
             )}
           </tbody>
         </table>

@@ -95,7 +95,7 @@ export default function Dashboard() {
               <thead className="bg-[#F8FAFB]">
                 <tr>
                   <th className="px-4 lg:px-6 py-3 text-left text-xs font-semibold text-[#5A6B7C] uppercase tracking-wider">HN</th>
-                  <th className="px-4 lg:px-6 py-3 text-left text-xs font-semibold text-[#5A6B7C] uppercase tracking-wider">ชื่อผู้ป่วย</th>
+                  <th className="px-4 lg:px-6 py-3 text-left text-xs font-semibold text-[#5A6B7C] uppercase tracking-wider">ชื่อลูกค้า</th>
                   <th className="px-4 lg:px-6 py-3 text-left text-xs font-semibold text-[#5A6B7C] uppercase tracking-wider">วันที่ตรวจ</th>
                   <th className="px-4 lg:px-6 py-3 text-left text-xs font-semibold text-[#5A6B7C] uppercase tracking-wider">LAB</th>
                   <th className="px-4 lg:px-6 py-3 text-left text-xs font-semibold text-[#5A6B7C] uppercase tracking-wider">สถานะ</th>

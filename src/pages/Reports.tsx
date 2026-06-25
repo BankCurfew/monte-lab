@@ -71,7 +71,7 @@ export default function Reports() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">HN</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">ชื่อผู้ป่วย</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">ชื่อลูกค้า</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">วันที่ตรวจ</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">ห้อง LAB</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">แหล่ง</th>

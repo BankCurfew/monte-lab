@@ -8,7 +8,7 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'doctor', 'staff'] },
   { to: '/reports', icon: FileText, label: 'รายงานผลเลือด', roles: ['admin', 'doctor', 'staff'] },
   { to: '/upload', icon: Upload, label: 'อัปโหลด PDF', roles: ['admin', 'doctor'] },
-  { to: '/patients', icon: Users, label: 'ผู้ป่วย', roles: ['admin', 'doctor'] },
+  { to: '/patients', icon: Users, label: 'ลูกค้า', roles: ['admin', 'doctor'] },
   { to: '/settings', icon: Settings, label: 'ตั้งค่า', roles: ['admin', 'doctor', 'staff'] },
 ];
 
