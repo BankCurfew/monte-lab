@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Search } from 'lucide-react';
 
 const statusLabel: Record<string, string> = {
@@ -14,23 +15,31 @@ const statusColor: Record<string, string> = {
 };
 
 export default function Reports() {
+  const { role } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [doctorFilter, setDoctorFilter] = useState('all');
 
   useEffect(() => {
     const fetch = async () => {
       const { data } = await supabase
         .from('monte_reports')
-        .select('id, test_date, status, lab_name, source, created_at, monte_patients(hn, first_name, last_name)')
+        .select('id, test_date, status, lab_name, source, created_at, requested_by_name, monte_patients(hn, first_name, last_name)')
         .order('created_at', { ascending: false });
       setReports(data || []);
+      if (role === 'admin') {
+        const { data: docs } = await supabase.from('monte_doctors').select('full_name');
+        setDoctors(docs || []);
+      }
     };
     fetch();
-  }, []);
+  }, [role]);
 
   const filtered = reports.filter(r => {
     if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+    if (doctorFilter !== 'all' && r.requested_by_name !== doctorFilter) return false;
     if (search) {
       const q = search.toLowerCase();
       const name = `${r.monte_patients?.first_name} ${r.monte_patients?.last_name}`.toLowerCase();
@@ -64,6 +73,15 @@ export default function Reports() {
           <option value="approved">อนุมัติแล้ว</option>
           <option value="rejected">ปฏิเสธ</option>
         </select>
+        {role === 'admin' && doctors.length > 0 && (
+          <select value={doctorFilter} onChange={e => setDoctorFilter(e.target.value)}
+            className="px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00868A]">
+            <option value="all">ทุกแพทย์</option>
+            {doctors.map(d => (
+              <option key={d.full_name} value={d.full_name}>{d.full_name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="bg-white rounded-lg shadow">
