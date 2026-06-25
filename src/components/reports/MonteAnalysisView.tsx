@@ -19,13 +19,15 @@ const S = {
   warn: '#d4a017',
 } as const;
 
-export function MonteAnalysisView({ analysis, patient, report, allReports, parsedValues, doctor }: {
+export function MonteAnalysisView({ analysis, patient, report, allReports, parsedValues, doctor, role, onEditRecommendation }: {
   analysis: MonteAnalysis;
   patient?: { hn?: string; first_name?: string; last_name?: string; date_of_birth?: string | null; gender?: string | null };
   report?: { test_date?: string; lab_name?: string; status?: string; approved_at?: string };
   allReports?: { test_date?: string; lab_name?: string }[];
   parsedValues?: Record<string, Record<string, ParsedTest>>;
   doctor?: { full_name?: string; license_no?: string; signature_url?: string | null } | null;
+  role?: string | null;
+  onEditRecommendation?: (idx: number, text: string) => void;
 }) {
   const allTests = parsedValues
     ? Object.values(parsedValues).reduce((acc, group) => ({ ...acc, ...group }), {} as Record<string, ParsedTest>)
@@ -166,7 +168,7 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
           const bg = numColors[idx] || S.teal;
           const hc = headingColors[idx] || S.teal;
           return (
-            <div key={idx} style={{ display: 'flex', marginBottom: 6, borderRadius: 4, overflow: 'hidden', background: '#fafafa', border: '0.5px solid #e8e8e8' }}>
+            <div key={idx} style={{ display: 'flex', marginBottom: 6, borderRadius: 4, overflow: 'hidden', background: '#fafafa', border: '0.5px solid #e8e8e8', position: 'relative' }}>
               <div style={{ width: 28, minWidth: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 7, color: '#fff', fontWeight: 900, fontSize: '12pt', background: bg }}>{idx + 1}</div>
               <div style={{ padding: '6px 10px', flex: 1, fontSize: '8pt', lineHeight: 1.5 }}>
                 <div style={{ fontWeight: 700, color: hc, fontSize: '8.5pt', marginBottom: 2 }}>
@@ -175,6 +177,12 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
                 <p style={{ marginTop: 2, color: '#444' }}>{item.interpretation}</p>
                 {item.recommendation && <p style={{ marginTop: 2, color: '#444' }}>💊 {item.recommendation}</p>}
               </div>
+              {role === 'doctor' && onEditRecommendation && (
+                <button onClick={() => {
+                  const newText = prompt('แก้ไขคำแนะนำ:', `${item.interpretation}\n💊 ${item.recommendation}`);
+                  if (newText !== null) onEditRecommendation(idx, newText);
+                }} style={{ position: 'absolute', top: 4, right: 4, background: '#fff', border: '1px solid #ddd', borderRadius: 4, padding: '2px 6px', fontSize: '7pt', color: S.teal, cursor: 'pointer' }}>แก้ไข</button>
+              )}
             </div>
           );
         })}
@@ -186,19 +194,19 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
       </div>
 
       {/* ── DOCTOR SIGNATURE ── */}
-      <div style={{ marginTop: 16, textAlign: 'right', fontSize: '8pt', color: '#555' }}>
+      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', fontSize: '8pt', color: '#555' }}>
         {report?.status === 'approved' && doctor?.full_name ? (
-          <div style={{ display: 'inline-block', textAlign: 'center' }}>
-            <div style={{ marginBottom: 2, fontSize: '8pt', color: S.teal, fontWeight: 600 }}>อนุมัติโดย</div>
+          <div style={{ textAlign: 'center', minWidth: 160 }}>
+            <div style={{ marginBottom: 4, fontSize: '8pt', color: S.teal, fontWeight: 600 }}>อนุมัติโดย</div>
             {doctor.signature_url && (
-              <img src={doctor.signature_url} alt="ลายเซ็นแพทย์" crossOrigin="anonymous" style={{ height: 32, objectFit: 'contain', marginBottom: 2 }} />
+              <img src={doctor.signature_url} alt="ลายเซ็นแพทย์" crossOrigin="anonymous" style={{ height: 36, objectFit: 'contain', display: 'block', margin: '0 auto 4px' }} />
             )}
             <div style={{ fontWeight: 700, fontSize: '9pt', color: '#222' }}>{doctor.full_name}</div>
             {doctor.license_no && <div style={{ fontSize: '7pt', color: '#777' }}>ใบอนุญาตเลขที่ {doctor.license_no}</div>}
             <div style={{ fontSize: '6.5pt', color: '#999', marginTop: 1 }}>วันที่อนุมัติ: {report.approved_at ? new Date(report.approved_at).toLocaleDateString('th-TH') : '-'}</div>
           </div>
         ) : (
-          <div>
+          <div style={{ textAlign: 'center', minWidth: 160 }}>
             <div style={{ color: '#aaa', marginBottom: 4 }}>ผ./ทพ. _________________________</div>
             <div style={{ fontSize: '7pt', color: '#bbb' }}>รอลายเซ็นแพทย์</div>
           </div>

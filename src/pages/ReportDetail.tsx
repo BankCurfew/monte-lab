@@ -105,8 +105,11 @@ export default function ReportDetail() {
     }
   };
 
+  const logAction = async (action: string, details: Record<string, any> = {}) => {
+    await supabase.from('monte_audit_logs').insert({ report_id: id, user_id: user?.id, action, details });
+  };
+
   const handleApprove = async () => {
-    // Find doctor record for current user
     const { data: doctorData } = await supabase
       .from('monte_doctors')
       .select('id, full_name, license_no, signature_url')
@@ -115,16 +118,26 @@ export default function ReportDetail() {
 
     const { error } = await supabase
       .from('monte_reports')
-      .update({
-        status: 'approved',
-        approved_at: new Date().toISOString(),
-        approved_by: doctorData?.id || null,
-      })
+      .update({ status: 'approved', approved_at: new Date().toISOString(), approved_by: doctorData?.id || null })
       .eq('id', id);
     if (error) toast.error(error.message);
     else {
+      await logAction('approve', { doctor: doctorData?.full_name });
       toast.success('อนุมัติแล้ว');
-      setReport({ ...report, status: 'approved', approved_by: doctorData?.id, monte_doctors: doctorData });
+      setReport({ ...report, status: 'approved', approved_by: doctorData?.id, approved_at: new Date().toISOString(), monte_doctors: doctorData });
+    }
+  };
+
+  const handleUndoApproval = async () => {
+    const { error } = await supabase
+      .from('monte_reports')
+      .update({ status: 'ready', approved_at: null, approved_by: null })
+      .eq('id', id);
+    if (error) toast.error(error.message);
+    else {
+      await logAction('undo_approve', { previous_status: 'approved' });
+      toast.success('ยกเลิกการอนุมัติแล้ว');
+      setReport({ ...report, status: 'ready', approved_at: null, approved_by: null, monte_doctors: null });
     }
   };
 
@@ -135,7 +148,11 @@ export default function ReportDetail() {
       .update({ status: 'rejected', rejection_reason: rejectReason })
       .eq('id', id);
     if (error) toast.error(error.message);
-    else { toast.success('ปฏิเสธแล้ว'); setReport({ ...report, status: 'rejected' }); setShowReject(false); }
+    else {
+      await logAction('reject', { reason: rejectReason });
+      toast.success('ปฏิเสธแล้ว');
+      setReport({ ...report, status: 'rejected' }); setShowReject(false);
+    }
   };
 
   const handleExportPdf = async () => {
@@ -292,7 +309,14 @@ export default function ReportDetail() {
 
           {monteAnalysis && (
             <div ref={analysisRef}>
-              <MonteAnalysisView analysis={monteAnalysis} patient={patient} report={report} allReports={allPatientReports} parsedValues={aggregatedParsed} doctor={report.monte_doctors} />
+              <MonteAnalysisView analysis={monteAnalysis} patient={patient} report={report} allReports={allPatientReports} parsedValues={aggregatedParsed} doctor={report.monte_doctors} role={role}
+                onEditRecommendation={async (idx, text) => {
+                  const customRecs = { ...(report.custom_recommendations || {}), [idx]: text };
+                  await supabase.from('monte_reports').update({ custom_recommendations: customRecs }).eq('id', id);
+                  await logAction('edit_recommendation', { index: idx, text });
+                  setReport({ ...report, custom_recommendations: customRecs });
+                  toast.success('บันทึกคำแนะนำแล้ว');
+                }} />
             </div>
           )}
         </div>
@@ -343,6 +367,13 @@ export default function ReportDetail() {
                 </button>
               )}
             </div>
+          )}
+
+          {role === 'doctor' && report.status === 'approved' && (
+            <button onClick={handleUndoApproval}
+              className="w-full flex items-center justify-center gap-2 p-3 bg-white border border-amber-300 text-amber-600 rounded-lg shadow hover:bg-amber-50 text-sm">
+              <XCircle className="h-4 w-4" /> ยกเลิกการอนุมัติ
+            </button>
           )}
 
           {report.status === 'rejected' && report.rejection_reason && (
