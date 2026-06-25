@@ -33,6 +33,23 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
 * { transition-property: background-color, border-color, color, opacity, transform; transition-duration: 150ms; }
 a, button { transition-duration: 200ms; }
 
+/* Monte Analysis — mobile responsive */
+.monte-analysis-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.monte-analysis-header .monte-title { font-size: 16pt; }
+.monte-patient-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; }
+.monte-overview-boxes { display: flex; gap: 8px; }
+.monte-results-grid { display: flex; gap: 10px; }
+
+@media (max-width: 640px) {
+  .monte-analysis-header { flex-direction: column; gap: 4px; }
+  .monte-analysis-header .monte-title { font-size: 12pt; }
+  .monte-patient-grid { grid-template-columns: 1fr; gap: 2px; }
+  .monte-overview-boxes { flex-direction: column; }
+  .monte-results-grid { flex-direction: column; }
+  .monte-results-grid table { font-size: 7pt !important; }
+  .monte-results-grid th, .monte-results-grid td { padding: 2px 3px !important; }
+}
+
 /* Analysis animations */
 @keyframes progressIndeterminate {
   0% { transform: translateX(-100%); }

@@ -102,22 +102,21 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
   );
 
   return (
-    <div style={{ fontFamily: "'Sukhumvit Set', 'Sarabun', 'Noto Sans Thai', sans-serif", fontSize: '9.5pt', color: '#222', background: '#fff', padding: '24px', lineHeight: 1.45, maxWidth: '900px' }}>
+    <div style={{ fontFamily: "'Sukhumvit Set', 'Sarabun', 'Noto Sans Thai', sans-serif", fontSize: '9.5pt', color: '#222', background: '#fff', padding: '16px', lineHeight: 1.45, maxWidth: '900px' }}>
 
       {/* ── HEADER ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, borderBottom: `2.5px solid ${S.teal}`, paddingBottom: 6 }}>
+      <div className="monte-analysis-header" style={{ marginBottom: 8, borderBottom: `2.5px solid ${S.teal}`, paddingBottom: 6 }}>
         <div>
-          <img src="/brand/monte-logo-primary.png" alt="Monte Hair Clinic" style={{ height: 48 }} crossOrigin="anonymous" />
+          <img src="/brand/monte-logo-primary.png" alt="Monte Hair Clinic" style={{ height: 40 }} crossOrigin="anonymous" />
         </div>
         <div style={{ textAlign: 'center', flex: 1, paddingTop: 4 }}>
-          <div style={{ fontSize: '16pt', fontWeight: 700, color: S.teal }}>ใบสรุปผลการตรวจเลือด</div>
+          <div className="monte-title" style={{ fontWeight: 700, color: S.teal }}>ใบสรุปผลการตรวจเลือด</div>
           <div style={{ fontSize: '7.5pt', color: '#888', marginTop: 1 }}>Blood Test Summary Report</div>
         </div>
-        <div style={{ width: 40 }} />
       </div>
 
       {/* ── PATIENT INFO ── */}
-      <div style={{ background: '#f5f5f5', borderRadius: 4, padding: '6px 10px', marginBottom: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 20px', fontSize: '8.5pt' }}>
+      <div className="monte-patient-grid" style={{ background: '#f5f5f5', borderRadius: 4, padding: '6px 10px', marginBottom: 8, fontSize: '8.5pt' }}>
         <div><span style={{ color: '#777' }}>ชื่อ-นามสกุล / NAME:</span> <span style={{ fontWeight: 600 }}>{patient?.first_name} {patient?.last_name}</span></div>
         <div><span style={{ color: '#777' }}>HN:</span> <span style={{ fontWeight: 600 }}>{patient?.hn || '-'}</span></div>
         <div><span style={{ color: '#777' }}>เพศ / SEX:</span> <span style={{ fontWeight: 600 }}>{sex}</span></div>
@@ -136,7 +135,7 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
           { label: 'ปกติ', bg: `linear-gradient(135deg, #48b084, ${S.green})`, item: recItems[2] },
         ];
         return (
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          <div className="monte-overview-boxes" style={{ marginBottom: 10 }}>
             {boxes.map((box, i) => (
               <div key={i} style={{ flex: 1, borderRadius: 5, padding: '7px 10px', color: '#fff', background: box.bg }}>
                 <div style={{ fontSize: '10pt', fontWeight: 700 }}>{box.label}</div>
@@ -155,9 +154,9 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
 
       {/* ── TEST RESULTS ── */}
       <div style={{ background: S.teal, color: '#fff', padding: '5px 10px', borderRadius: 4, fontSize: '10pt', fontWeight: 700, marginBottom: 4 }}>ผลการตรวจ / Test Results</div>
-      <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-        <div style={{ flex: 1 }}>{renderLabTable(leftTests)}</div>
-        <div style={{ flex: 1 }}>{renderLabTable(rightTests)}</div>
+      <div className="monte-results-grid" style={{ marginBottom: 10 }}>
+        <div style={{ flex: 1, overflowX: 'auto' }}>{renderLabTable(leftTests)}</div>
+        <div style={{ flex: 1, overflowX: 'auto' }}>{renderLabTable(rightTests)}</div>
       </div>
 
       {/* ── RECOMMENDATIONS ── */}
