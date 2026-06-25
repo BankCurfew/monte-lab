@@ -185,18 +185,18 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
       {/* ── DOCTOR SIGNATURE ── */}
       <div style={{ marginTop: 16, textAlign: 'right', fontSize: '8pt', color: '#555' }}>
         {report?.status === 'approved' && doctor?.full_name ? (
-          <div>
-            <div style={{ marginBottom: 4, fontSize: '9pt', color: S.teal, fontWeight: 600 }}>อนุมัติโดย</div>
+          <div style={{ display: 'inline-block', textAlign: 'center' }}>
+            <div style={{ marginBottom: 2, fontSize: '8pt', color: S.teal, fontWeight: 600 }}>อนุมัติโดย</div>
             {doctor.signature_url && (
-              <img src={doctor.signature_url} alt="ลายเซ็นแพทย์" crossOrigin="anonymous" style={{ height: 56, objectFit: 'contain', marginBottom: 4, display: 'block', marginLeft: 'auto' }} />
+              <img src={doctor.signature_url} alt="ลายเซ็นแพทย์" crossOrigin="anonymous" style={{ height: 32, objectFit: 'contain', marginBottom: 2 }} />
             )}
-            <div style={{ fontWeight: 700, fontSize: '10pt', color: '#222' }}>{doctor.full_name}</div>
-            {doctor.license_no && <div style={{ fontSize: '7.5pt', color: '#777' }}>ใบอนุญาตเลขที่ {doctor.license_no}</div>}
-            <div style={{ fontSize: '7pt', color: '#999', marginTop: 2 }}>วันที่อนุมัติ: {report.approved_at ? new Date(report.approved_at).toLocaleDateString('th-TH') : '-'}</div>
+            <div style={{ fontWeight: 700, fontSize: '9pt', color: '#222' }}>{doctor.full_name}</div>
+            {doctor.license_no && <div style={{ fontSize: '7pt', color: '#777' }}>ใบอนุญาตเลขที่ {doctor.license_no}</div>}
+            <div style={{ fontSize: '6.5pt', color: '#999', marginTop: 1 }}>วันที่อนุมัติ: {report.approved_at ? new Date(report.approved_at).toLocaleDateString('th-TH') : '-'}</div>
           </div>
         ) : (
           <div>
-            <div style={{ color: '#aaa', marginBottom: 8 }}>ผ./ทพ. _________________________</div>
+            <div style={{ color: '#aaa', marginBottom: 4 }}>ผ./ทพ. _________________________</div>
             <div style={{ fontSize: '7pt', color: '#bbb' }}>รอลายเซ็นแพทย์</div>
           </div>
         )}
