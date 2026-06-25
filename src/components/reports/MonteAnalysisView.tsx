@@ -268,7 +268,7 @@ function RecommendationSection({ analysis, role, onEditRecommendation, customRec
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
 
-  const recItems = analysis.items.filter(i => i.recommendation);
+  const recItems = analysis.items.filter(i => i.recommendation).sort((a, b) => a.priority - b.priority);
   const priorityColors: Record<number, { num: string; heading: string }> = {
     1: { num: '#c0392b', heading: '#c0392b' },
     2: { num: '#d4a017', heading: '#b8860b' },

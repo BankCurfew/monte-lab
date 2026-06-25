@@ -397,7 +397,11 @@ export default function ReportDetail() {
           )}
 
           {(role === 'admin' || role === 'doctor') && (
-            <button onClick={() => { setReport({ ...report }); toast.success('วิเคราะห์ใหม่เรียบร้อย'); }}
+            <button onClick={async () => {
+              await supabase.from('monte_reports').update({ custom_recommendations: {} }).eq('id', id);
+              setReport((prev: any) => ({ ...prev, custom_recommendations: {} }));
+              toast.success('วิเคราะห์ใหม่เรียบร้อย — คำแนะนำกลับเป็นค่าเริ่มต้น');
+            }}
               className="w-full flex items-center justify-center gap-2 p-3 bg-white border border-[#00868A] text-[#006B6E] rounded-lg shadow hover:bg-[#E0F5F5] text-sm">
               วิเคราะห์ใหม่
             </button>
