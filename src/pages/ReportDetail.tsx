@@ -1,8 +1,8 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, FileText, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, XCircle, Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MonteAnalysisView } from '@/components/reports/MonteAnalysisView';
 import { generateMonteAnalysis } from '@/lib/monte-analysis';
@@ -52,6 +52,8 @@ export default function ReportDetail() {
   const [allPatientReports, setAllPatientReports] = useState<any[]>([]);
   const [rejectReason, setRejectReason] = useState('');
   const [showReject, setShowReject] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const analysisRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -115,6 +117,37 @@ export default function ReportDetail() {
     else { toast.success('ปฏิเสธแล้ว'); setReport({ ...report, status: 'rejected' }); setShowReject(false); }
   };
 
+  const handleExportPdf = async () => {
+    if (!analysisRef.current) return;
+    setExportingPdf(true);
+    try {
+      const html2canvas = (await import('html2canvas-pro')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const canvas = await html2canvas(analysisRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      const imgData = canvas.toDataURL('image/png');
+
+      const pdfWidth = 210;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdf = new jsPDF({ orientation: pdfHeight > 297 ? 'p' : 'p', unit: 'mm', format: 'a4' });
+
+      const pageHeight = 297;
+      const totalPages = Math.ceil(pdfHeight / pageHeight);
+
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, -page * pageHeight, pdfWidth, pdfHeight);
+      }
+
+      const patientName = `${patient?.first_name || ''}_${patient?.hn || 'report'}`;
+      pdf.save(`Monte_Lab_${patientName}_${report.test_date || 'report'}.pdf`);
+      toast.success('ดาวน์โหลด PDF เรียบร้อย');
+    } catch (err) {
+      toast.error('ไม่สามารถสร้าง PDF ได้');
+    }
+    setExportingPdf(false);
+  };
+
   const renderBloodTests = () => {
     const groups = Object.entries(parsed);
     if (groups.length === 0) return <p className="text-gray-400 text-sm">ยังไม่มีข้อมูลผลตรวจ (รอประมวลผล PDF)</p>;
@@ -174,10 +207,22 @@ export default function ReportDetail() {
             {!monteAnalysis && renderBloodTests()}
           </div>
 
-          {monteAnalysis && <MonteAnalysisView analysis={monteAnalysis} patient={patient} report={report} allReports={allPatientReports} parsedValues={aggregatedParsed} doctor={report.monte_doctors} />}
+          {monteAnalysis && (
+            <div ref={analysisRef}>
+              <MonteAnalysisView analysis={monteAnalysis} patient={patient} report={report} allReports={allPatientReports} parsedValues={aggregatedParsed} doctor={report.monte_doctors} />
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
+          {report.status === 'approved' && monteAnalysis && (
+            <button onClick={handleExportPdf} disabled={exportingPdf}
+              className="w-full flex items-center gap-2 p-4 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 text-sm font-medium disabled:opacity-50">
+              {exportingPdf ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+              {exportingPdf ? 'กำลังสร้าง PDF...' : 'ดู PDF ที่ Approve แล้ว'}
+            </button>
+          )}
+
           {report.raw_pdf_url && (
             <a href={report.raw_pdf_url} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 p-4 bg-white rounded-lg shadow hover:bg-gray-50 text-sm text-[#006B6E]">
