@@ -172,7 +172,7 @@ export default function ReportDetail() {
                 {statusLabel[report.status]}
               </span>
             </div>
-            {renderBloodTests()}
+            {!monteAnalysis && renderBloodTests()}
           </div>
 
           {monteAnalysis && <MonteAnalysisView analysis={monteAnalysis} patient={patient} report={report} allReports={allPatientReports} />}

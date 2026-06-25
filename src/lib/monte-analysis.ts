@@ -106,7 +106,9 @@ export function generateMonteAnalysis(parsedValues: Record<string, Record<string
   if (hasTestosterone || hasDheas) {
     const testVal = hasTestosterone?.value;
     const dheasVal = hasDheas?.value;
-    const anyHigh = hasTestosterone?.flag === 'high' || hasDheas?.flag === 'high';
+    // DHEA-S clinical range for hair clinic: 98.80-340 µg/dL (not lab default 80-560)
+    const dheasHigh = hasDheas && typeof dheasVal === 'number' && dheasVal > 340;
+    const anyHigh = hasTestosterone?.flag === 'high' || hasDheas?.flag === 'high' || dheasHigh;
 
     if (anyHigh) {
       hairScore -= 10;
