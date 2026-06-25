@@ -39,6 +39,12 @@ export default function Reports() {
     return true;
   });
 
+  const grouped = filtered.reduce((acc: Record<string, any[]>, r) => {
+    const key = r.monte_patients?.hn || r.id;
+    (acc[key] = acc[key] || []).push(r);
+    return acc;
+  }, {});
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-800 mb-6">รายงานผลเลือด</h2>
@@ -73,20 +79,29 @@ export default function Reports() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(r => (
-              <tr key={r.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-3 text-sm">
-                  <Link to={`/reports/${r.id}`} className="text-[#006B6E] hover:underline font-medium">{r.monte_patients?.hn}</Link>
-                </td>
-                <td className="px-4 py-3 text-sm">{r.monte_patients?.first_name} {r.monte_patients?.last_name}</td>
-                <td className="px-4 py-3 text-sm">{r.test_date}</td>
-                <td className="px-4 py-3 text-sm">{r.lab_name || '-'}</td>
-                <td className="px-4 py-3 text-sm text-gray-500">{r.source === 'gmail' ? '📧 Email' : '📤 Upload'}</td>
-                <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-1 rounded-full ${statusColor[r.status] || ''} ${r.status === 'analyzing' ? 'animate-pulse' : ''}`}>{statusLabel[r.status] || r.status}</span>
-                </td>
-              </tr>
-            ))}
+            {Object.entries(grouped).map(([hn, reports]: [string, any[]]) => {
+              const first = reports[0];
+              const latestStatus = reports[0].status;
+              return reports.map((r, idx) => (
+                <tr key={r.id} className={`border-t hover:bg-gray-50 ${idx > 0 ? 'bg-gray-50/50' : ''}`}>
+                  <td className="px-4 py-3 text-sm">
+                    <Link to={`/reports/${r.id}`} className="text-[#006B6E] hover:underline font-medium">
+                      {r.monte_patients?.hn}
+                    </Link>
+                    {idx === 0 && reports.length > 1 && (
+                      <span className="ml-1 text-[10px] bg-[#E0F5F5] text-[#006B6E] px-1.5 py-0.5 rounded-full">{reports.length} ผล</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-sm">{r.monte_patients?.first_name} {r.monte_patients?.last_name}</td>
+                  <td className="px-4 py-3 text-sm">{r.test_date}</td>
+                  <td className="px-4 py-3 text-sm">{r.lab_name || '-'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{r.source === 'gmail' ? '📧 Email' : '📤 Upload'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-2 py-1 rounded-full ${statusColor[r.status] || ''} ${r.status === 'analyzing' ? 'animate-pulse' : ''}`}>{statusLabel[r.status] || r.status}</span>
+                  </td>
+                </tr>
+              ));
+            })}
             {filtered.length === 0 && (
               <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">ยังไม่มีรายงาน</td></tr>
             )}

@@ -9,13 +9,14 @@ import { TableSkeleton } from '@/components/ui/TableSkeleton';
 interface Stats {
   total: number;
   pending: number;
+  analyzed: number;
   ready: number;
   approved: number;
   rejected: number;
 }
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, ready: 0, approved: 0, rejected: 0 });
+  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, analyzed: 0, ready: 0, approved: 0, rejected: 0 });
   const [recentReports, setRecentReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,7 +26,8 @@ export default function Dashboard() {
       if (data) {
         setStats({
           total: data.length,
-          pending: data.filter(r => r.status === 'pending' || r.status === 'analyzing').length,
+          pending: data.filter(r => r.status === 'pending').length,
+          analyzed: data.filter(r => r.status !== 'pending' && r.status !== 'analyzing').length,
           ready: data.filter(r => r.status === 'ready').length,
           approved: data.filter(r => r.status === 'approved').length,
           rejected: data.filter(r => r.status === 'rejected').length,
@@ -44,6 +46,7 @@ export default function Dashboard() {
 
   const statCards = [
     { label: 'ทั้งหมด', value: stats.total, icon: FileText, borderColor: 'border-l-[#00868A]', iconBg: 'bg-[#E0F5F5]', iconColor: 'text-[#006B6E]' },
+    { label: 'วิเคราะห์แล้ว', value: stats.analyzed, icon: CheckCircle, borderColor: 'border-l-blue-400', iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
     { label: 'รอดำเนินการ', value: stats.pending, icon: Clock, borderColor: 'border-l-amber-400', iconBg: 'bg-amber-50', iconColor: 'text-amber-600' },
     { label: 'รออนุมัติ', value: stats.ready, icon: AlertCircle, borderColor: 'border-l-orange-400', iconBg: 'bg-orange-50', iconColor: 'text-orange-600' },
     { label: 'อนุมัติแล้ว', value: stats.approved, icon: CheckCircle, borderColor: 'border-l-emerald-400', iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
@@ -55,7 +58,7 @@ export default function Dashboard() {
       <h2 className="text-xl lg:text-2xl font-bold text-[#1A2B3C] mb-6">Dashboard</h2>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4 mb-8">
         {statCards.map(card => (
           <div key={card.label} className={`bg-white rounded-xl shadow-sm p-4 border-l-4 ${card.borderColor} hover:-translate-y-0.5 hover:shadow-md transition-all`}>
             <div className="flex items-center gap-2 mb-2">

@@ -7,6 +7,34 @@ import { toast } from 'sonner';
 import { MonteAnalysisView } from '@/components/reports/MonteAnalysisView';
 import { generateMonteAnalysis } from '@/lib/monte-analysis';
 
+function InlineHNEdit({ patientId, currentHN }: { patientId: string; currentHN: string }) {
+  const [editing, setEditing] = useState(false);
+  const [hn, setHn] = useState(currentHN || '');
+
+  if (!editing) {
+    return (
+      <span className="cursor-pointer hover:text-[#006B6E] hover:underline" onClick={() => setEditing(true)} title="คลิกเพื่อแก้ไข HN">
+        {currentHN || 'ไม่ระบุ'} ✏️
+      </span>
+    );
+  }
+
+  const save = async () => {
+    const { error } = await supabase.from('monte_patients').update({ hn }).eq('id', patientId);
+    if (error) toast.error(error.message);
+    else { toast.success('อัพเดท HN แล้ว'); setEditing(false); }
+  };
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      <input value={hn} onChange={e => setHn(e.target.value)} className="px-1 py-0.5 border rounded text-sm w-24"
+        autoFocus onKeyDown={e => e.key === 'Enter' && save()} />
+      <button onClick={save} className="text-xs text-[#006B6E] hover:underline">บันทึก</button>
+      <button onClick={() => setEditing(false)} className="text-xs text-gray-400">ยกเลิก</button>
+    </span>
+  );
+}
+
 const statusLabel: Record<string, string> = {
   pending: 'รอดำเนินการ', analyzing: 'กำลังวิเคราะห์', ready: 'รออนุมัติ',
   approved: 'อนุมัติแล้ว', rejected: 'ปฏิเสธ',
@@ -21,6 +49,7 @@ export default function ReportDetail() {
   const { id } = useParams();
   const { role } = useAuth();
   const [report, setReport] = useState<any>(null);
+  const [allPatientReports, setAllPatientReports] = useState<any[]>([]);
   const [rejectReason, setRejectReason] = useState('');
   const [showReject, setShowReject] = useState(false);
 
@@ -31,13 +60,36 @@ export default function ReportDetail() {
       .select('*, monte_patients(*), monte_doctors(full_name, license_no)')
       .eq('id', id)
       .single()
-      .then(({ data }) => setReport(data));
+      .then(({ data }) => {
+        setReport(data);
+        if (data?.patient_id) {
+          supabase
+            .from('monte_reports')
+            .select('id, test_date, lab_name, parsed_values, status')
+            .eq('patient_id', data.patient_id)
+            .order('test_date', { ascending: false })
+            .then(({ data: all }) => setAllPatientReports(all || []));
+        }
+      });
   }, [id]);
 
   if (!report) return <div className="text-center py-12 text-gray-400">กำลังโหลด...</div>;
 
   const patient = report.monte_patients;
-  const parsed = report.parsed_values || {};
+
+  const aggregatedParsed = useMemo(() => {
+    const merged: Record<string, any> = {};
+    for (const r of allPatientReports) {
+      const pv = r.parsed_values || {};
+      for (const [group, tests] of Object.entries(pv) as [string, any][]) {
+        if (!merged[group]) merged[group] = {};
+        Object.assign(merged[group], tests);
+      }
+    }
+    return Object.keys(merged).length > 0 ? merged : (report.parsed_values || {});
+  }, [allPatientReports, report.parsed_values]);
+
+  const parsed = aggregatedParsed;
   void report.flags;
 
   const monteAnalysis = useMemo(
@@ -111,7 +163,10 @@ export default function ReportDetail() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h2 className="text-xl font-bold text-gray-800">ผลตรวจเลือด — {patient?.first_name} {patient?.last_name}</h2>
-                <p className="text-sm text-gray-500">HN: {patient?.hn} | วันที่ตรวจ: {report.test_date} | LAB: {report.lab_name || '-'}</p>
+                <p className="text-sm text-gray-500">
+                  HN: <InlineHNEdit patientId={report.patient_id} currentHN={patient?.hn} /> | วันที่ตรวจ: {report.test_date} | LAB: {report.lab_name || '-'}
+                  {allPatientReports.length > 1 && <span className="ml-2 text-[#006B6E] font-medium">({allPatientReports.length} รายงานรวม)</span>}
+                </p>
               </div>
               <span className={`text-xs px-3 py-1 rounded-full ${statusColor[report.status]}`}>
                 {statusLabel[report.status]}
