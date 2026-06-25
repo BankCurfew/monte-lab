@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Upload, FileText, X, Eye, Sparkles, Loader2 } from 'lucide-react';
+import { extractTextFromPdf } from '@/lib/pdf-reader';
 import { toast } from 'sonner';
 
 interface PdfFile {
@@ -25,28 +26,62 @@ interface ParsedPreview {
   detectedTests: string[];
 }
 
-// Extract info from PDF text
+// Extract info from PDF text — supports Bangkok R.I.A Lab format
 function extractPreview(text: string): ParsedPreview {
-  const hnMatch = text.match(/HN[:\s]*([0-9-]+)/i);
-  const nameMatch = text.match(/(?:ชื่อ|Name|Patient)[:\s]*([^\n\r]+)/i);
-  const dateMatch = text.match(/(?:วันที่|Date|Collected)[:\s]*([0-9/.-]+\s*[A-Za-z]*\s*[0-9]*)/i);
-  const labMatch = text.match(/(?:Lab|ห้องปฏิบัติการ|Laboratory)[:\s]*([^\n\r]+)/i) ||
-    text.match(/(Bangkok R\.I\.A|BNH|Bumrungrad|รามาธิบดี|ศิริราช|จุฬา|N Health|โรงพยาบาล[^\n]+)/i);
+  // HN patterns
+  const hnMatch = text.match(/HN[:\s]*([0-9]+-[0-9]+)/i) ||
+    text.match(/HN BRIA[:\s]*([0-9]+)/i);
 
+  // Patient name — try multiple patterns
+  const nameMatch = text.match(/Name[:\s]*([A-Za-zก-๙\s]+?)(?:\s*HN|\s*Age|\n)/i) ||
+    text.match(/ชื่อ[:\s]*([^\n\r]+)/i) ||
+    text.match(/Patient[:\s]*([^\n\r]+)/i);
+
+  // Date — Collection Date or วันที่
+  const dateMatch = text.match(/Collection Date\/Time[:\s]*([0-9-]+)/i) ||
+    text.match(/วันที่[:\s]*([0-9/.-]+)/i) ||
+    text.match(/Date[:\s]*([0-9/.-]+\s*[A-Za-z]*\s*[0-9]*)/i);
+
+  // Lab name
+  const labMatch = text.match(/(Bangkok R\.I\.A\s*(?:LAB)?|BANGKOK R\.I\.A)/i) ||
+    text.match(/(BNH|Bumrungrad|รามาธิบดี|ศิริราช|จุฬา|N Health|โรงพยาบาล[^\n,]+)/i) ||
+    text.match(/Hospital\/Clinic[:\s]*([^\n]+)/i);
+
+  // Age + Sex
+  const ageMatch = text.match(/Age[:\s]*(\d+)\s*Y/i);
+  const sexMatch = text.match(/Sex[:\s]*(Male|Female|ชาย|หญิง)/i);
+
+  // These are available for future use in Edge Function
+  void text.match(/HN BRIA[:\s]*(\d+)/i);
+  void text.match(/Reported by\s*:\s*([^\n(]+)/i);
+  void text.match(/Approved by\s*:\s*([^\n(]+)/i);
+
+  // Test detection — comprehensive
   const testPatterns = [
-    'WBC', 'RBC', 'Hemoglobin', 'Hematocrit', 'Platelet', 'MCV', 'MCH', 'MCHC',
+    'WBC', 'RBC', 'Hemoglobin', 'Hematocrit', 'Platelet', 'MCV', 'MCH', 'MCHC', 'RDW',
     'FBS', 'BUN', 'Creatinine', 'Cholesterol', 'HDL', 'LDL', 'Triglyceride',
     'AST', 'ALT', 'ALP', 'TSH', 'Free T3', 'Free T4',
     'Testosterone', 'DHEA', 'Vitamin D', 'Vitamin B12', 'Ferritin', 'Iron', 'Zinc',
-    'Estradiol', 'Prolactin', 'HbA1c', 'Uric Acid'
+    'Estradiol', 'Prolactin', 'HbA1c', 'Uric Acid', 'ANA',
+    'Anisocytosis', 'Microcyte', 'Macrocyte', 'Hypochromia',
+    'PMN Neutrophil', 'Lymphocyte', 'Monocyte', 'Eosinophil', 'Basophil'
   ];
 
   const detectedTests = testPatterns.filter(t =>
     text.toLowerCase().includes(t.toLowerCase())
   );
 
+  // Build display name with age/sex if available
+  let displayName = nameMatch?.[1]?.trim() || null;
+  if (displayName && (ageMatch || sexMatch)) {
+    const parts = [];
+    if (ageMatch) parts.push(`${ageMatch[1]} ปี`);
+    if (sexMatch) parts.push(sexMatch[1]);
+    displayName = `${displayName} (${parts.join(', ')})`;
+  }
+
   return {
-    patientName: nameMatch?.[1]?.trim() || null,
+    patientName: displayName,
     hn: hnMatch?.[1]?.trim() || null,
     testDate: dateMatch?.[1]?.trim() || null,
     labName: labMatch?.[1]?.trim() || null,
@@ -82,7 +117,7 @@ export default function UploadReport() {
     pdfs.forEach(async (pdf) => {
       try {
         setFiles(prev => prev.map(f => f.id === pdf.id ? { ...f, status: 'previewing' } : f));
-        const text = await pdf.file.text();
+        const text = await extractTextFromPdf(pdf.file);
         const preview = extractPreview(text);
         setFiles(prev => prev.map(f => f.id === pdf.id ? { ...f, status: 'pending', preview } : f));
       } catch {
