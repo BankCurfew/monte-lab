@@ -168,37 +168,49 @@ export default function PatientDetail() {
         ) : null}
       </div>
 
-      {/* Reports Summary */}
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-        <h3 className="font-semibold text-[#1A2B3C] mb-3">ผลตรวจเลือด ({reports.length} รายงาน)</h3>
-        {reports.length === 0 ? (
-          <p className="text-sm text-[#94A3B8]">ยังไม่มีผลตรวจเลือด</p>
-        ) : (
+      {/* Combined Analysis Result */}
+      {reports.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-[#1A2B3C]">ผลวิเคราะห์รวม</h3>
+            <div className="flex items-center gap-2">
+              {latestReport?.status === 'approved' ? (
+                <span className="text-xs px-3 py-1 rounded-full bg-green-100 text-green-700 font-medium">อนุมัติแล้ว</span>
+              ) : latestReport?.status === 'ready' ? (
+                <span className="text-xs px-3 py-1 rounded-full bg-orange-100 text-orange-700">รออนุมัติ</span>
+              ) : (
+                <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700">กำลังวิเคราะห์</span>
+              )}
+              <Link to={`/reports/${latestReport?.id}`} className="text-xs text-[#006B6E] hover:underline">ดูรายละเอียด →</Link>
+            </div>
+          </div>
+          <p className="text-sm text-[#5A6B7C]">วิเคราะห์จาก {reports.length} PDF — วันที่ล่าสุด: {latestReport?.test_date || '-'} | LAB: {latestReport?.lab_name || '-'}</p>
+        </div>
+      )}
+
+      {/* Raw PDF Sources */}
+      {reports.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <h3 className="font-semibold text-[#1A2B3C] mb-3">PDF ต้นฉบับ ({reports.length} ไฟล์)</h3>
           <div className="space-y-2">
             {reports.map(r => (
-              <Link key={r.id} to={`/reports/${r.id}`}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F8FAFB] border border-[#E2E8F0] transition-colors">
+              <div key={r.id} className="flex items-center justify-between p-3 rounded-lg border border-[#E2E8F0]">
                 <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-[#006B6E]" />
+                  <FileText className="h-5 w-5 text-[#94A3B8]" />
                   <div>
-                    <p className="text-sm font-medium text-[#1A2B3C]">{r.test_date || '-'}</p>
-                    <p className="text-xs text-[#94A3B8]">{r.lab_name || 'ไม่ระบุห้อง LAB'}</p>
+                    <p className="text-sm text-[#5A6B7C]">{r.test_date || '-'} — {r.lab_name || 'ไม่ระบุ LAB'}</p>
                   </div>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  r.status === 'approved' ? 'bg-green-100 text-green-700' :
-                  r.status === 'ready' ? 'bg-orange-100 text-orange-700' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
-                  {r.status === 'approved' ? 'อนุมัติแล้ว' : r.status === 'ready' ? 'รออนุมัติ' : r.status}
-                </span>
-              </Link>
+                {r.raw_pdf_url && (
+                  <a href={r.raw_pdf_url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#006B6E] hover:underline">ดู PDF</a>
+                )}
+              </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Combined Analysis */}
+      {/* Combined Analysis View */}
       {monteAnalysis && (
         <MonteAnalysisView
           analysis={monteAnalysis}
