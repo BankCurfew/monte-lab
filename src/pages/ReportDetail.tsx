@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, FileText, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { MonteAnalysisView } from '@/components/reports/MonteAnalysisView';
+import { generateMonteAnalysis } from '@/lib/monte-analysis';
 
 const statusLabel: Record<string, string> = {
   pending: 'รอดำเนินการ', analyzing: 'กำลังวิเคราะห์', ready: 'รออนุมัติ',
@@ -36,8 +38,12 @@ export default function ReportDetail() {
 
   const patient = report.monte_patients;
   const parsed = report.parsed_values || {};
-  const analysis = report.analysis_json || {};
   void report.flags;
+
+  const monteAnalysis = useMemo(
+    () => Object.keys(parsed).length > 0 ? generateMonteAnalysis(parsed) : null,
+    [parsed]
+  );
 
   const handleApprove = async () => {
     const { error } = await supabase
@@ -114,22 +120,7 @@ export default function ReportDetail() {
             {renderBloodTests()}
           </div>
 
-          {analysis.summary && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="font-semibold text-gray-700 mb-3">การวิเคราะห์ AI</h3>
-              <p className="text-sm text-gray-600 mb-4">{analysis.summary}</p>
-              {analysis.recommendations?.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">คำแนะนำ</h4>
-                  <ul className="list-disc pl-5 space-y-1">
-                    {analysis.recommendations.map((rec: string, i: number) => (
-                      <li key={i} className="text-sm text-gray-600">{rec}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
+          {monteAnalysis && <MonteAnalysisView analysis={monteAnalysis} />}
         </div>
 
         <div className="space-y-4">
