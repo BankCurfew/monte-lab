@@ -104,11 +104,17 @@ export default function Settings() {
   const [newDoctorName, setNewDoctorName] = useState('');
   const [newLicenseNo, setNewLicenseNo] = useState('');
   const [fetching, setFetching] = useState(false);
+  const [clinic, setClinic] = useState({ clinic_name: '', phone: '', email: '', line_id: '', address: '', disclaimer: '' });
+  const [clinicId, setClinicId] = useState<string | null>(null);
+  const [clinicEditing, setClinicEditing] = useState(false);
   const [fetchInterval, setFetchInterval] = useState('15');
   const [gmailEmail, setGmailEmail] = useState('lab.montehair@gmail.com');
 
   useEffect(() => {
     supabase.from('monte_doctors').select('*').then(({ data }) => setDoctors(data || []));
+    supabase.from('monte_clinic_settings').select('*').limit(1).single().then(({ data }) => {
+      if (data) { setClinicId(data.id); setClinic({ clinic_name: data.clinic_name || '', phone: data.phone || '', email: data.email || '', line_id: data.line_id || '', address: data.address || '', disclaimer: data.disclaimer || '' }); }
+    });
   }, []);
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -153,6 +159,62 @@ export default function Settings() {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <h2 className="text-xl lg:text-2xl font-bold text-[#1A2B3C]">ตั้งค่า</h2>
+
+      {/* Clinic Info */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-[#1A2B3C]">ข้อมูลคลินิก (แสดงบน PDF)</h3>
+          <button onClick={() => clinicEditing ? (async () => {
+            if (clinicId) { await supabase.from('monte_clinic_settings').update(clinic).eq('id', clinicId); toast.success('บันทึกข้อมูลคลินิกแล้ว'); }
+            setClinicEditing(false);
+          })() : setClinicEditing(true)}
+            className="px-3 py-1.5 text-sm border border-[#00868A] text-[#006B6E] rounded-xl hover:bg-[#E0F5F5]">
+            {clinicEditing ? 'บันทึก' : 'แก้ไข'}
+          </button>
+        </div>
+        {clinicEditing ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-[#94A3B8] mb-1">ชื่อคลินิก</label>
+              <input value={clinic.clinic_name} onChange={e => setClinic({ ...clinic, clinic_name: e.target.value })}
+                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00868A]" />
+            </div>
+            <div>
+              <label className="block text-xs text-[#94A3B8] mb-1">โทรศัพท์</label>
+              <input value={clinic.phone} onChange={e => setClinic({ ...clinic, phone: e.target.value })}
+                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00868A]" />
+            </div>
+            <div>
+              <label className="block text-xs text-[#94A3B8] mb-1">อีเมล</label>
+              <input value={clinic.email} onChange={e => setClinic({ ...clinic, email: e.target.value })}
+                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00868A]" />
+            </div>
+            <div>
+              <label className="block text-xs text-[#94A3B8] mb-1">LINE ID</label>
+              <input value={clinic.line_id} onChange={e => setClinic({ ...clinic, line_id: e.target.value })}
+                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00868A]" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs text-[#94A3B8] mb-1">ที่อยู่</label>
+              <input value={clinic.address} onChange={e => setClinic({ ...clinic, address: e.target.value })}
+                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00868A]" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs text-[#94A3B8] mb-1">ข้อความ Disclaimer (บน PDF)</label>
+              <textarea value={clinic.disclaimer} onChange={e => setClinic({ ...clinic, disclaimer: e.target.value })}
+                rows={2} className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00868A]" />
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div><span className="text-[#94A3B8]">ชื่อ:</span> <span className="font-medium">{clinic.clinic_name}</span></div>
+            <div><span className="text-[#94A3B8]">โทร:</span> <span className="font-medium">{clinic.phone}</span></div>
+            <div><span className="text-[#94A3B8]">อีเมล:</span> <span className="font-medium">{clinic.email}</span></div>
+            <div><span className="text-[#94A3B8]">LINE:</span> <span className="font-medium">{clinic.line_id}</span></div>
+            <div className="col-span-2"><span className="text-[#94A3B8]">ที่อยู่:</span> <span className="font-medium">{clinic.address || '-'}</span></div>
+          </div>
+        )}
+      </div>
 
       {/* Email Fetch Section */}
       <div className="bg-white rounded-xl shadow-sm p-6">
