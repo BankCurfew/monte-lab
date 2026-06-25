@@ -68,8 +68,9 @@ export default function SharedReport() {
     const { data: reps } = await supabase.from('monte_reports').select('*').eq('patient_id', link.patient_id).order('test_date', { ascending: false });
     setReports(reps || []);
 
-    if (reps?.[0]?.approved_by) {
-      const { data: doc } = await supabase.from('monte_doctors').select('full_name, license_no, signature_url').eq('id', reps[0].approved_by).single();
+    const approvedReport = reps?.find(r => r.approved_by);
+    if (approvedReport) {
+      const { data: doc } = await supabase.from('monte_doctors').select('full_name, license_no, signature_url').eq('id', approvedReport.approved_by).single();
       setDoctor(doc);
     }
 
@@ -122,7 +123,7 @@ export default function SharedReport() {
     return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c0392b' }}>ลิงก์ไม่ถูกต้อง</div>;
   }
 
-  const latestReport = reports[0];
+  const approvedReport = reports.find(r => r.status === 'approved') || reports[0];
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFB', padding: '24px 16px', fontFamily: "'Sukhumvit Set', sans-serif" }}>
@@ -135,7 +136,7 @@ export default function SharedReport() {
           <MonteAnalysisView
             analysis={monteAnalysis}
             patient={patient}
-            report={latestReport}
+            report={{ ...approvedReport, status: 'approved', approved_at: approvedReport?.approved_at }}
             allReports={reports}
             parsedValues={aggregatedParsed}
             doctor={doctor}
