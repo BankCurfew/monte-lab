@@ -396,6 +396,13 @@ export default function ReportDetail() {
             </button>
           )}
 
+          {(role === 'admin' || role === 'doctor') && (
+            <button onClick={() => { setReport({ ...report }); toast.success('วิเคราะห์ใหม่เรียบร้อย'); }}
+              className="w-full flex items-center justify-center gap-2 p-3 bg-white border border-[#00868A] text-[#006B6E] rounded-lg shadow hover:bg-[#E0F5F5] text-sm">
+              วิเคราะห์ใหม่
+            </button>
+          )}
+
           {report.raw_pdf_url && (
             <a href={report.raw_pdf_url} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 p-4 bg-white rounded-lg shadow hover:bg-gray-50 text-sm text-[#006B6E]">
