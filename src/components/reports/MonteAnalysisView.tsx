@@ -129,20 +129,23 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
       {/* ── OVERVIEW — 3 boxes matching recommendations ── */}
       <div style={{ fontSize: '10.5pt', fontWeight: 700, color: S.teal, marginBottom: 5 }}>สรุปภาพรวม / Overview</div>
       {(() => {
-        const recItems = analysis.items.filter(i => i.recommendation);
+        const p1Items = analysis.items.filter(i => i.priority === 1);
+        const p2Items = analysis.items.filter(i => i.priority === 2);
+        const p3Items = analysis.items.filter(i => i.priority === 3);
         const boxes = [
-          { label: 'ต้องแก้ไขเร่งด่วน', bg: `linear-gradient(135deg, #e85d5d, ${S.red})`, item: recItems[0] },
-          { label: 'ควรแก้ไข', bg: `linear-gradient(135deg, #f0c040, ${S.yellow})`, item: recItems[1] },
-          { label: 'ปกติ', bg: `linear-gradient(135deg, #48b084, ${S.green})`, item: recItems[2] },
+          { label: 'ต้องดูแลเร่งด่วน', sublabel: 'Action Required', bg: `linear-gradient(135deg, #e85d5d, ${S.red})`, items: p1Items },
+          { label: 'ควรปรับปรุงและเฝ้าระวัง', sublabel: 'Health Optimization', bg: `linear-gradient(135deg, #f0c040, ${S.yellow})`, items: p2Items },
+          { label: 'เกณฑ์ปกติ', sublabel: 'Healthy Baseline', bg: `linear-gradient(135deg, #48b084, ${S.green})`, items: p3Items },
         ];
         return (
           <div className="monte-overview-boxes" style={{ marginBottom: 10 }}>
             {boxes.map((box, i) => (
               <div key={i} style={{ flex: 1, borderRadius: 5, padding: '7px 10px', color: '#fff', background: box.bg }}>
                 <div style={{ fontSize: '10pt', fontWeight: 700 }}>{box.label}</div>
-                <div style={{ fontSize: '7.5pt', opacity: 0.92, marginTop: 1 }}>
-                  {box.item
-                    ? `${box.item.testName}: ${box.item.value} ${box.item.unit}`
+                <div style={{ fontSize: '6.5pt', opacity: 0.7 }}>{box.sublabel}</div>
+                <div style={{ fontSize: '7.5pt', opacity: 0.92, marginTop: 2 }}>
+                  {box.items.length > 0
+                    ? box.items.map(it => it.testName).join(', ')
                     : i === 2
                       ? <><span style={{ fontSize: '18pt', fontWeight: 900 }}>{analysis.hairHealthScore}</span>/100{allReports && allReports.length > 1 ? ` (${allReports.length} รายงานรวม)` : ''}</>
                       : 'ไม่พบ'}
@@ -266,16 +269,20 @@ function RecommendationSection({ analysis, role, onEditRecommendation, customRec
   const [editText, setEditText] = useState('');
 
   const recItems = analysis.items.filter(i => i.recommendation);
-  const numColors = ['#c0392b', '#e67e22', '#d4a017', '#2A8C8C', '#27866a'];
-  const headingColors = ['#c0392b', '#e67e22', '#b8860b', '#2A8C8C', '#27866a'];
+  const priorityColors: Record<number, { num: string; heading: string }> = {
+    1: { num: '#c0392b', heading: '#c0392b' },
+    2: { num: '#d4a017', heading: '#b8860b' },
+    3: { num: '#27866a', heading: '#2A8C8C' },
+  };
 
   return (
     <div style={{ marginTop: 8 }}>
       <div style={{ fontSize: '10.5pt', fontWeight: 700, color: '#2A8C8C', marginBottom: 5, fontStyle: 'italic' }}>คำแนะนำเบื้องต้น / Recommendations</div>
 
       {recItems.map((item, idx) => {
-        const bg = numColors[idx] || '#2A8C8C';
-        const hc = headingColors[idx] || '#2A8C8C';
+        const pc = priorityColors[item.priority] || { num: '#2A8C8C', heading: '#2A8C8C' };
+        const bg = pc.num;
+        const hc = pc.heading;
         const isEditing = editIdx === idx;
         const customText = customRecommendations?.[String(idx)];
 
