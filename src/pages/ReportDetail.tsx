@@ -311,10 +311,11 @@ export default function ReportDetail() {
             <div ref={analysisRef}>
               <MonteAnalysisView analysis={monteAnalysis} patient={patient} report={report} allReports={allPatientReports} parsedValues={aggregatedParsed} doctor={report.monte_doctors} role={role} customRecommendations={report.custom_recommendations}
                 onEditRecommendation={async (idx, text) => {
-                  const customRecs = { ...(report.custom_recommendations || {}), [idx]: text };
-                  await supabase.from('monte_reports').update({ custom_recommendations: customRecs }).eq('id', id);
+                  const customRecs = { ...(report.custom_recommendations || {}), [String(idx)]: text };
+                  const { error } = await supabase.from('monte_reports').update({ custom_recommendations: customRecs }).eq('id', id);
+                  if (error) { toast.error('บันทึกไม่สำเร็จ'); return; }
                   await logAction('edit_recommendation', { index: idx, text });
-                  setReport({ ...report, custom_recommendations: customRecs });
+                  setReport((prev: any) => ({ ...prev, custom_recommendations: customRecs }));
                   toast.success('บันทึกคำแนะนำแล้ว');
                 }} />
             </div>
