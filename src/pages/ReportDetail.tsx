@@ -31,7 +31,7 @@ export default function ReportDetail() {
     if (!id) return;
     supabase
       .from('monte_reports')
-      .select('*, monte_patients(*), monte_doctors(full_name, license_no, signature_url)')
+      .select('*, monte_patients(*), monte_doctors!approved_by(full_name, license_no, signature_url)')
       .eq('id', id)
       .single()
       .then(({ data }) => {
