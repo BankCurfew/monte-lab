@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { MonteAnalysis } from '@/lib/monte-analysis';
 
 interface ParsedTest {
@@ -159,34 +160,7 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
       </div>
 
       {/* ── RECOMMENDATIONS ── */}
-      <div style={{ marginTop: 8 }}>
-        <div style={{ fontSize: '10.5pt', fontWeight: 700, color: S.teal, marginBottom: 5, fontStyle: 'italic' }}>คำแนะนำเบื้องต้น / Recommendations</div>
-
-        {analysis.items.filter(i => i.recommendation).map((item, idx) => {
-          const numColors = [S.red, S.orange, S.yellow, S.teal, S.green];
-          const headingColors = [S.red, S.orange, '#b8860b', S.teal, S.green];
-          const bg = numColors[idx] || S.teal;
-          const hc = headingColors[idx] || S.teal;
-          return (
-            <div key={idx} style={{ display: 'flex', marginBottom: 6, borderRadius: 4, overflow: 'hidden', background: '#fafafa', border: '0.5px solid #e8e8e8', position: 'relative' }}>
-              <div style={{ width: 28, minWidth: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 7, color: '#fff', fontWeight: 900, fontSize: '12pt', background: bg }}>{idx + 1}</div>
-              <div style={{ padding: '6px 10px', flex: 1, fontSize: '8pt', lineHeight: 1.5 }}>
-                <div style={{ fontWeight: 700, color: hc, fontSize: '8.5pt', marginBottom: 2 }}>
-                  {item.testName} ({item.testNameTh}) — ค่า {item.value} {item.unit}
-                </div>
-                <p style={{ marginTop: 2, color: '#444' }}>{item.interpretation}</p>
-                {item.recommendation && <p style={{ marginTop: 2, color: '#444' }}>💊 {item.recommendation}</p>}
-              </div>
-              {role === 'doctor' && onEditRecommendation && (
-                <button onClick={() => {
-                  const newText = prompt('แก้ไขคำแนะนำ:', `${item.interpretation}\n💊 ${item.recommendation}`);
-                  if (newText !== null) onEditRecommendation(idx, newText);
-                }} style={{ position: 'absolute', top: 4, right: 4, background: '#fff', border: '1px solid #ddd', borderRadius: 4, padding: '2px 6px', fontSize: '7pt', color: S.teal, cursor: 'pointer' }}>แก้ไข</button>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <RecommendationSection analysis={analysis} role={role} onEditRecommendation={onEditRecommendation} />
 
       {/* ── DISCLAIMER ── */}
       <div style={{ marginTop: 6, fontSize: '7pt', color: '#888', borderLeft: `3px solid ${S.teal}`, paddingLeft: 8 }}>
@@ -279,6 +253,70 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
         </div>
         <div style={{ marginTop: 12, textAlign: 'right', fontSize: '8pt', color: '#555' }}>ก.2/ก.2</div>
       </div>
+    </div>
+  );
+}
+
+function RecommendationSection({ analysis, role, onEditRecommendation }: {
+  analysis: MonteAnalysis; role?: string | null; onEditRecommendation?: (idx: number, text: string) => void;
+}) {
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const [editText, setEditText] = useState('');
+
+  const recItems = analysis.items.filter(i => i.recommendation);
+  const numColors = ['#c0392b', '#e67e22', '#d4a017', '#2A8C8C', '#27866a'];
+  const headingColors = ['#c0392b', '#e67e22', '#b8860b', '#2A8C8C', '#27866a'];
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ fontSize: '10.5pt', fontWeight: 700, color: '#2A8C8C', marginBottom: 5, fontStyle: 'italic' }}>คำแนะนำเบื้องต้น / Recommendations</div>
+
+      {recItems.map((item, idx) => {
+        const bg = numColors[idx] || '#2A8C8C';
+        const hc = headingColors[idx] || '#2A8C8C';
+        const isEditing = editIdx === idx;
+
+        return (
+          <div key={idx} style={{ display: 'flex', marginBottom: 6, borderRadius: 4, overflow: 'hidden', background: '#fafafa', border: '0.5px solid #e8e8e8' }}>
+            <div style={{ width: 28, minWidth: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 7, color: '#fff', fontWeight: 900, fontSize: '12pt', background: bg }}>{idx + 1}</div>
+            <div style={{ padding: '6px 10px', flex: 1, fontSize: '8pt', lineHeight: 1.5 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ fontWeight: 700, color: hc, fontSize: '8.5pt', marginBottom: 2 }}>
+                  {item.testName} ({item.testNameTh}) — ค่า {item.value} {item.unit}
+                </div>
+                {role === 'doctor' && onEditRecommendation && !isEditing && (
+                  <button onClick={() => { setEditIdx(idx); setEditText(`${item.interpretation}\n💊 ${item.recommendation}`); }}
+                    style={{ background: '#fff', border: '1px solid #2A8C8C', borderRadius: 6, padding: '3px 10px', fontSize: '7.5pt', color: '#2A8C8C', cursor: 'pointer', whiteSpace: 'nowrap', marginLeft: 8 }}>
+                    แก้ไข
+                  </button>
+                )}
+              </div>
+
+              {isEditing ? (
+                <div style={{ marginTop: 4 }}>
+                  <textarea value={editText} onChange={e => setEditText(e.target.value)}
+                    rows={4} style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #2A8C8C', borderRadius: 8, fontSize: '8.5pt', lineHeight: 1.6, resize: 'vertical', outline: 'none' }} />
+                  <div style={{ display: 'flex', gap: 6, marginTop: 4, justifyContent: 'flex-end' }}>
+                    <button onClick={() => setEditIdx(null)}
+                      style={{ padding: '4px 12px', fontSize: '7.5pt', color: '#888', background: '#fff', border: '1px solid #ddd', borderRadius: 6, cursor: 'pointer' }}>
+                      ยกเลิก
+                    </button>
+                    <button onClick={() => { onEditRecommendation!(idx, editText); setEditIdx(null); }}
+                      style={{ padding: '4px 12px', fontSize: '7.5pt', color: '#fff', background: '#2A8C8C', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+                      บันทึก
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p style={{ marginTop: 2, color: '#444' }}>{item.interpretation}</p>
+                  {item.recommendation && <p style={{ marginTop: 2, color: '#444' }}>💊 {item.recommendation}</p>}
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
