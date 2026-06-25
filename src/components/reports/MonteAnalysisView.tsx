@@ -188,7 +188,7 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
           <div>
             <div style={{ marginBottom: 4, fontSize: '9pt', color: S.teal, fontWeight: 600 }}>อนุมัติโดย</div>
             {doctor.signature_url && (
-              <img src={doctor.signature_url} alt="ลายเซ็นแพทย์" style={{ height: 48, objectFit: 'contain', marginBottom: 4 }} />
+              <img src={doctor.signature_url} alt="ลายเซ็นแพทย์" crossOrigin="anonymous" style={{ height: 56, objectFit: 'contain', marginBottom: 4, display: 'block', marginLeft: 'auto' }} />
             )}
             <div style={{ fontWeight: 700, fontSize: '10pt', color: '#222' }}>{doctor.full_name}</div>
             {doctor.license_no && <div style={{ fontSize: '7.5pt', color: '#777' }}>ใบอนุญาตเลขที่ {doctor.license_no}</div>}
