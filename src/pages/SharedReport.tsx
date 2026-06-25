@@ -79,7 +79,7 @@ export default function SharedReport() {
   if (step === 'password' || step === 'loading') {
     return (
       <div style={{ minHeight: '100vh', background: '#F8FAFB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sukhumvit Set', sans-serif" }}>
-        <PDPAConsent />
+        <PDPAConsent shareToken={token} />
         <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <img src="/brand/monte-logo-primary.png" alt="Monte" style={{ height: 48, margin: '0 auto 12px' }} />
@@ -126,7 +126,7 @@ export default function SharedReport() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFB', padding: '24px 16px', fontFamily: "'Sukhumvit Set', sans-serif" }}>
-      <PDPAConsent />
+      <PDPAConsent shareToken={token} />
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <img src="/brand/monte-logo-primary.png" alt="Monte" style={{ height: 40 }} />
