@@ -7,7 +7,6 @@ export function MonteAnalysisView({ analysis, patient, report, allReports }: {
   allReports?: { test_date?: string; lab_name?: string }[];
 }) {
   const flaggedItems = analysis.items.filter(i => i.status !== 'normal' && i.status !== 'negative');
-  const normalItems = analysis.items.filter(i => i.status === 'normal' || i.status === 'negative');
 
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden" style={{ fontFamily: "'Sarabun', 'Noto Sans Thai', sans-serif" }}>
