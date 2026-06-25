@@ -162,45 +162,36 @@ export default function ReportDetail() {
       const html2canvas = (await import('html2canvas-pro')).default;
       const { jsPDF } = await import('jspdf');
 
-      // Force desktop width for A4 rendering
       const el = analysisRef.current;
       const originalStyle = el.style.cssText;
       el.style.width = '800px';
       el.style.maxWidth = '800px';
       el.style.padding = '24px';
 
-      // Hide edit buttons during capture
       const editBtns = el.querySelectorAll<HTMLElement>('[data-no-print]');
       editBtns.forEach(b => b.style.display = 'none');
 
-      const canvas = await html2canvas(el, {
-        scale: 3,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        width: 800,
-      });
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = 210;
+      const pages = el.querySelectorAll<HTMLElement>('[data-pdf-page]');
 
-      // Restore
+      if (pages.length > 0) {
+        for (let i = 0; i < pages.length; i++) {
+          if (i > 0) pdf.addPage();
+          const canvas = await html2canvas(pages[i], { scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 800 });
+          const imgData = canvas.toDataURL('image/png');
+          const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, Math.min(imgHeight, 297));
+        }
+      } else {
+        const canvas = await html2canvas(el, { scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 800 });
+        const imgData = canvas.toDataURL('image/png');
+        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+      }
+
       editBtns.forEach(b => b.style.display = '');
       el.style.cssText = originalStyle;
-
-      const imgData = canvas.toDataURL('image/png');
-
-      const pdfWidth = 210;
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-      const pageHeight = 290;
-      const pdf = new jsPDF('p', 'mm', 'a4');
-
-      let position = 0;
-      let page = 0;
-      while (position < imgHeight) {
-        if (page > 0) pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, -position, pdfWidth, imgHeight);
-        position += pageHeight;
-        page++;
-      }
 
       const patientName = `${patient?.first_name || ''}_${patient?.hn || 'report'}`;
       pdf.save(`Monte_Lab_${patientName}_${report.test_date || 'report'}.pdf`);

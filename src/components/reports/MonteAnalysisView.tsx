@@ -104,6 +104,7 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
   return (
     <div style={{ fontFamily: "'Sukhumvit Set', 'Sarabun', 'Noto Sans Thai', sans-serif", fontSize: '9.5pt', color: '#222', background: '#fff', padding: '16px', lineHeight: 1.45, maxWidth: '900px' }}>
 
+      <div data-pdf-page="1">
       {/* ── HEADER ── */}
       <div className="monte-analysis-header" style={{ marginBottom: 8, borderBottom: `2.5px solid ${S.teal}`, paddingBottom: 6 }}>
         <div>
@@ -193,9 +194,10 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
         <div style={{ textAlign: 'right', fontSize: '6.5pt', maxWidth: '50%' }}>ผลการตรวจเลือดนี้เป็นเพียงข้อมูลเบื้องต้นสำหรับการพิจารณาร่วมกับแพทย์</div>
       </div>
       <div style={{ marginTop: 12, textAlign: 'right', fontSize: '8pt', color: '#555' }}>ก.1/ก.2</div>
+      </div>{/* end data-pdf-page 1 */}
 
       {/* ═══════════ PAGE 2: TREND & HISTORY ═══════════ */}
-      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '2px dashed #ddd' }}>
+      <div data-pdf-page="2" style={{ marginTop: 32, paddingTop: 24, borderTop: '2px dashed #ddd' }}>
         {/* HEADER P2 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, borderBottom: `2.5px solid ${S.teal}`, paddingBottom: 6 }}>
           <div>
