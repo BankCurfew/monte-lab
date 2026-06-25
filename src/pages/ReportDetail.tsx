@@ -1,0 +1,185 @@
+import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { ArrowLeft, FileText, CheckCircle, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
+
+const statusLabel: Record<string, string> = {
+  pending: 'รอดำเนินการ', analyzing: 'กำลังวิเคราะห์', ready: 'รออนุมัติ',
+  approved: 'อนุมัติแล้ว', rejected: 'ปฏิเสธ',
+};
+const statusColor: Record<string, string> = {
+  pending: 'bg-gray-100 text-gray-700', analyzing: 'bg-blue-100 text-blue-700',
+  ready: 'bg-orange-100 text-orange-700', approved: 'bg-green-100 text-green-700',
+  rejected: 'bg-red-100 text-red-700',
+};
+
+export default function ReportDetail() {
+  const { id } = useParams();
+  const { role } = useAuth();
+  const [report, setReport] = useState<any>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showReject, setShowReject] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    supabase
+      .from('monte_reports')
+      .select('*, monte_patients(*), monte_doctors(full_name, license_no)')
+      .eq('id', id)
+      .single()
+      .then(({ data }) => setReport(data));
+  }, [id]);
+
+  if (!report) return <div className="text-center py-12 text-gray-400">กำลังโหลด...</div>;
+
+  const patient = report.monte_patients;
+  const parsed = report.parsed_values || {};
+  const analysis = report.analysis_json || {};
+  void report.flags;
+
+  const handleApprove = async () => {
+    const { error } = await supabase
+      .from('monte_reports')
+      .update({ status: 'approved', approved_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('อนุมัติแล้ว'); setReport({ ...report, status: 'approved' }); }
+  };
+
+  const handleReject = async () => {
+    if (!rejectReason.trim()) { toast.error('กรุณาระบุเหตุผล'); return; }
+    const { error } = await supabase
+      .from('monte_reports')
+      .update({ status: 'rejected', rejection_reason: rejectReason })
+      .eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('ปฏิเสธแล้ว'); setReport({ ...report, status: 'rejected' }); setShowReject(false); }
+  };
+
+  const renderBloodTests = () => {
+    const groups = Object.entries(parsed);
+    if (groups.length === 0) return <p className="text-gray-400 text-sm">ยังไม่มีข้อมูลผลตรวจ (รอประมวลผล PDF)</p>;
+
+    return groups.map(([group, tests]: [string, any]) => (
+      <div key={group} className="mb-4">
+        <h4 className="text-sm font-semibold text-[#00868A] uppercase mb-2">{group}</h4>
+        <table className="w-full text-sm">
+          <thead><tr className="bg-gray-50">
+            <th className="px-3 py-2 text-left text-xs text-gray-500">รายการ</th>
+            <th className="px-3 py-2 text-right text-xs text-gray-500">ค่า</th>
+            <th className="px-3 py-2 text-left text-xs text-gray-500">หน่วย</th>
+            <th className="px-3 py-2 text-left text-xs text-gray-500">ค่าอ้างอิง</th>
+            <th className="px-3 py-2 text-center text-xs text-gray-500">สถานะ</th>
+          </tr></thead>
+          <tbody>
+            {Object.entries(tests).map(([testName, val]: [string, any]) => (
+              <tr key={testName} className={`border-t ${val.flag ? 'bg-red-50' : ''}`}>
+                <td className="px-3 py-2">{testName}</td>
+                <td className="px-3 py-2 text-right font-mono">{val.value}</td>
+                <td className="px-3 py-2 text-gray-500">{val.unit}</td>
+                <td className="px-3 py-2 text-gray-500">{val.ref_min}-{val.ref_max}</td>
+                <td className="px-3 py-2 text-center">
+                  {val.flag === 'low' && <span className="text-blue-600">⬇</span>}
+                  {val.flag === 'high' && <span className="text-red-600">⬆</span>}
+                  {!val.flag && <span className="text-green-600">✓</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ));
+  };
+
+  return (
+    <div>
+      <Link to="/reports" className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-4">
+        <ArrowLeft className="h-4 w-4" /> กลับ
+      </Link>
+
+      <div className="grid grid-cols-3 gap-6">
+        <div className="col-span-2 space-y-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">ผลตรวจเลือด — {patient?.first_name} {patient?.last_name}</h2>
+                <p className="text-sm text-gray-500">HN: {patient?.hn} | วันที่ตรวจ: {report.test_date} | LAB: {report.lab_name || '-'}</p>
+              </div>
+              <span className={`text-xs px-3 py-1 rounded-full ${statusColor[report.status]}`}>
+                {statusLabel[report.status]}
+              </span>
+            </div>
+            {renderBloodTests()}
+          </div>
+
+          {analysis.summary && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="font-semibold text-gray-700 mb-3">การวิเคราะห์ AI</h3>
+              <p className="text-sm text-gray-600 mb-4">{analysis.summary}</p>
+              {analysis.recommendations?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">คำแนะนำ</h4>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {analysis.recommendations.map((rec: string, i: number) => (
+                      <li key={i} className="text-sm text-gray-600">{rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          {report.raw_pdf_url && (
+            <a href={report.raw_pdf_url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 p-4 bg-white rounded-lg shadow hover:bg-gray-50 text-sm text-[#00868A]">
+              <FileText className="h-5 w-5" /> ดู PDF ต้นฉบับ
+            </a>
+          )}
+
+          {report.summary_pdf_url && (
+            <a href={report.summary_pdf_url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 p-4 bg-white rounded-lg shadow hover:bg-gray-50 text-sm text-green-600">
+              <FileText className="h-5 w-5" /> ดู PDF สรุป
+            </a>
+          )}
+
+          {role === 'doctor' && report.status === 'ready' && (
+            <div className="bg-white rounded-lg shadow p-4 space-y-3">
+              <h3 className="font-semibold text-gray-700">การอนุมัติ</h3>
+              <button onClick={handleApprove}
+                className="w-full flex items-center justify-center gap-2 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm">
+                <CheckCircle className="h-4 w-4" /> อนุมัติ
+              </button>
+              {showReject ? (
+                <div className="space-y-2">
+                  <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)}
+                    placeholder="เหตุผลที่ปฏิเสธ..." className="w-full px-3 py-2 border rounded-md text-sm" rows={3} />
+                  <div className="flex gap-2">
+                    <button onClick={() => setShowReject(false)} className="flex-1 py-2 text-sm text-gray-600">ยกเลิก</button>
+                    <button onClick={handleReject} className="flex-1 py-2 bg-red-600 text-white rounded-md text-sm">ยืนยันปฏิเสธ</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setShowReject(true)}
+                  className="w-full flex items-center justify-center gap-2 py-2 border border-red-300 text-red-600 rounded-md hover:bg-red-50 text-sm">
+                  <XCircle className="h-4 w-4" /> ปฏิเสธ
+                </button>
+              )}
+            </div>
+          )}
+
+          {report.status === 'rejected' && report.rejection_reason && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm font-medium text-red-700">เหตุผลที่ปฏิเสธ:</p>
+              <p className="text-sm text-red-600 mt-1">{report.rejection_reason}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
