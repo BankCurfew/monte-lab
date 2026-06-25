@@ -122,29 +122,32 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
         <div><span style={{ color: '#777' }}>ห้อง LAB:</span> <span style={{ fontWeight: 600 }}>{report?.lab_name || '-'}</span></div>
       </div>
 
-      {/* ── OVERVIEW ── */}
+      {/* ── OVERVIEW — 3 boxes matching recommendations ── */}
       <div style={{ fontSize: '10.5pt', fontWeight: 700, color: S.teal, marginBottom: 5 }}>สรุปภาพรวม / Overview</div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-        {analysis.urgentActions.length > 0 || allTests.hb?.flag ? (
-          <div style={{ flex: 1, borderRadius: 5, padding: '7px 10px', color: '#fff', background: `linear-gradient(135deg, #e85d5d, ${S.red})` }}>
-            <div style={{ fontSize: '10pt', fontWeight: 700 }}>ภาวะโลหิตจาง</div>
-            <div style={{ fontSize: '7.5pt', opacity: 0.92, marginTop: 1 }}>Hb, Hct, RBC ต่ำกว่าปกติ</div>
+      {(() => {
+        const recItems = analysis.items.filter(i => i.recommendation);
+        const boxes = [
+          { label: 'ต้องแก้ไขเร่งด่วน', bg: `linear-gradient(135deg, #e85d5d, ${S.red})`, item: recItems[0] },
+          { label: 'ควรแก้ไข', bg: `linear-gradient(135deg, #f0c040, ${S.yellow})`, item: recItems[1] },
+          { label: 'ปกติ', bg: `linear-gradient(135deg, #48b084, ${S.green})`, item: recItems[2] },
+        ];
+        return (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            {boxes.map((box, i) => (
+              <div key={i} style={{ flex: 1, borderRadius: 5, padding: '7px 10px', color: '#fff', background: box.bg }}>
+                <div style={{ fontSize: '10pt', fontWeight: 700 }}>{box.label}</div>
+                <div style={{ fontSize: '7.5pt', opacity: 0.92, marginTop: 1 }}>
+                  {box.item
+                    ? `${box.item.testName}: ${box.item.value} ${box.item.unit}`
+                    : i === 2
+                      ? <><span style={{ fontSize: '18pt', fontWeight: 900 }}>{analysis.hairHealthScore}</span>/100{allReports && allReports.length > 1 ? ` (${allReports.length} รายงานรวม)` : ''}</>
+                      : 'ไม่พบ'}
+                </div>
+              </div>
+            ))}
           </div>
-        ) : null}
-        {allTests.vitamin_d?.flag === 'low' ? (
-          <div style={{ flex: 1, borderRadius: 5, padding: '7px 10px', color: '#fff', background: `linear-gradient(135deg, #f0c040, ${S.yellow})` }}>
-            <div style={{ fontSize: '10pt', fontWeight: 700 }}>วิตามินดีต่ำมาก</div>
-            <div style={{ fontSize: '7.5pt', opacity: 0.92, marginTop: 1 }}>Vitamin D {allTests.vitamin_d.value} (ควรมากกว่า30)</div>
-          </div>
-        ) : null}
-        <div style={{ flex: 1, borderRadius: 5, padding: '7px 10px', color: '#fff', background: `linear-gradient(135deg, #48b084, ${S.green})` }}>
-          <div style={{ fontSize: '10pt', fontWeight: 700 }}>ดัชนีสุขภาพเส้นผม</div>
-          <div style={{ fontSize: '7.5pt', opacity: 0.92, marginTop: 1 }}>
-            <span style={{ fontSize: '18pt', fontWeight: 900 }}>{analysis.hairHealthScore}</span>/100
-            {allReports && allReports.length > 1 && <span> &nbsp;({allReports.length} รายงานรวม)</span>}
-          </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* ── TEST RESULTS ── */}
       <div style={{ background: S.teal, color: '#fff', padding: '5px 10px', borderRadius: 4, fontSize: '10pt', fontWeight: 700, marginBottom: 4 }}>ผลการตรวจ / Test Results</div>

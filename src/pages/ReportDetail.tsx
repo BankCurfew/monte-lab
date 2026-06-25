@@ -145,26 +145,35 @@ export default function ReportDetail() {
       const html2canvas = (await import('html2canvas-pro')).default;
       const { jsPDF } = await import('jspdf');
 
-      const canvas = await html2canvas(analysisRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      const imgData = canvas.toDataURL('image/png');
+      const canvas = await html2canvas(analysisRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
       const pdfWidth = 210;
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      const pdf = new jsPDF({ orientation: pdfHeight > 297 ? 'p' : 'p', unit: 'mm', format: 'a4' });
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pageHeight = 290;
+      const pdf = new jsPDF('p', 'mm', 'a4');
 
-      const pageHeight = 297;
-      const totalPages = Math.ceil(pdfHeight / pageHeight);
-
-      for (let page = 0; page < totalPages; page++) {
+      let position = 0;
+      let page = 0;
+      while (position < imgHeight) {
         if (page > 0) pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, -page * pageHeight, pdfWidth, pdfHeight);
+        pdf.addImage(imgData, 'JPEG', 0, -position, pdfWidth, imgHeight);
+        position += pageHeight;
+        page++;
       }
 
       const patientName = `${patient?.first_name || ''}_${patient?.hn || 'report'}`;
       pdf.save(`Monte_Lab_${patientName}_${report.test_date || 'report'}.pdf`);
       toast.success('ดาวน์โหลด PDF เรียบร้อย');
-    } catch (err) {
-      toast.error('ไม่สามารถสร้าง PDF ได้');
+    } catch (err: any) {
+      console.error('PDF export error:', err);
+      toast.error('ไม่สามารถสร้าง PDF ได้: ' + (err?.message || ''));
     }
     setExportingPdf(false);
   };
