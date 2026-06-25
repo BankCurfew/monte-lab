@@ -1,5 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from './NotificationBell';
+import { LogOut } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const roleLabel: Record<string, string> = {
   admin: 'ผู้ดูแลระบบ',
@@ -25,6 +27,9 @@ export function Header() {
         <div className="sm:hidden w-8 h-8 bg-[#00868A] rounded-full flex items-center justify-center text-white text-xs font-bold">
           {user?.email?.[0]?.toUpperCase() || 'U'}
         </div>
+        <button onClick={() => supabase.auth.signOut()} className="p-2 text-[#94A3B8] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="ออกจากระบบ">
+          <LogOut className="h-4 w-4" />
+        </button>
       </div>
     </header>
   );
