@@ -164,30 +164,33 @@ export default function ReportDetail() {
 
       const el = analysisRef.current;
       const originalStyle = el.style.cssText;
-      el.style.width = '800px';
-      el.style.maxWidth = '800px';
-      el.style.padding = '24px';
+      el.style.width = '760px';
+      el.style.maxWidth = '760px';
+      el.style.padding = '0';
+      el.style.margin = '0';
 
       const editBtns = el.querySelectorAll<HTMLElement>('[data-no-print]');
       editBtns.forEach(b => b.style.display = 'none');
 
+      const margin = 10;
+      const contentWidth = 210 - margin * 2;
+      const maxContentHeight = 297 - margin * 2;
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = 210;
       const pages = el.querySelectorAll<HTMLElement>('[data-pdf-page]');
 
       if (pages.length > 0) {
         for (let i = 0; i < pages.length; i++) {
           if (i > 0) pdf.addPage();
-          const canvas = await html2canvas(pages[i], { scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 800 });
+          const canvas = await html2canvas(pages[i], { scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 760 });
           const imgData = canvas.toDataURL('image/png');
-          const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, Math.min(imgHeight, 297));
+          const imgHeight = (canvas.height * contentWidth) / canvas.width;
+          pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, Math.min(imgHeight, maxContentHeight));
         }
       } else {
-        const canvas = await html2canvas(el, { scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 800 });
+        const canvas = await html2canvas(el, { scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 760 });
         const imgData = canvas.toDataURL('image/png');
-        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
+        pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
       }
 
       editBtns.forEach(b => b.style.display = '');
