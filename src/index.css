@@ -1,12 +1,33 @@
 @import "tailwindcss";
-
-@font-face {
-  font-family: 'Sarabun';
-  src: url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
-}
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
 
 body {
   margin: 0;
-  font-family: 'Sarabun', 'Noto Sans Thai', system-ui, sans-serif;
+  font-family: 'Sarabun', 'Noto Sans Thai', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8fafb;
+  color: #374151;
 }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Table responsive */
+@media (max-width: 768px) {
+  table { font-size: 13px; }
+  th, td { padding: 8px 6px !important; }
+}
+
+/* Focus ring */
+input:focus, select:focus, textarea:focus, button:focus-visible {
+  outline: 2px solid #00868A;
+  outline-offset: 2px;
+}
+
+/* Transitions */
+* { transition-property: background-color, border-color, color, opacity, transform; transition-duration: 150ms; }
+a, button { transition-duration: 200ms; }
