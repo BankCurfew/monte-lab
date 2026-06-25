@@ -100,7 +100,7 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
   );
 
   return (
-    <div style={{ fontFamily: "'Sarabun', 'Noto Sans Thai', 'Segoe UI', sans-serif", fontSize: '9.5pt', color: '#222', background: '#fff', padding: '24px', lineHeight: 1.45, maxWidth: '900px' }}>
+    <div style={{ fontFamily: "'Sukhumvit Set', 'Sarabun', 'Noto Sans Thai', sans-serif", fontSize: '9.5pt', color: '#222', background: '#fff', padding: '24px', lineHeight: 1.45, maxWidth: '900px' }}>
 
       {/* ── HEADER ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, borderBottom: `2.5px solid ${S.teal}`, paddingBottom: 6 }}>
@@ -224,12 +224,8 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
       <div style={{ marginTop: 32, paddingTop: 24, borderTop: '2px dashed #ddd' }}>
         {/* HEADER P2 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, borderBottom: `2.5px solid ${S.teal}`, paddingBottom: 6 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <img src="/brand/monte-logo-primary.png" alt="Monte" style={{ height: 40 }} crossOrigin="anonymous" />
-            <div>
-              <div style={{ fontSize: '22pt', fontWeight: 900, color: '#1a1a1a', letterSpacing: 3, lineHeight: 1 }}>MONTE</div>
-              <div style={{ fontSize: '7.5pt', color: '#888', letterSpacing: 2, marginTop: 1 }}>HAIR CLINIC</div>
-            </div>
+          <div>
+            <img src="/brand/monte-logo-primary.png" alt="Monte Hair Clinic" style={{ height: 48 }} crossOrigin="anonymous" />
           </div>
           <div style={{ textAlign: 'center', flex: 1, paddingTop: 4 }}>
             <div style={{ fontSize: '16pt', fontWeight: 700, color: S.teal }}>รายละเอียดผลตรวจย้อนหลัง</div>
