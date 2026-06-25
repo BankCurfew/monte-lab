@@ -47,7 +47,7 @@ const statusColor: Record<string, string> = {
 
 export default function ReportDetail() {
   const { id } = useParams();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const [report, setReport] = useState<any>(null);
   const [allPatientReports, setAllPatientReports] = useState<any[]>([]);
   const [rejectReason, setRejectReason] = useState('');
@@ -99,12 +99,26 @@ export default function ReportDetail() {
   const parsed = aggregatedParsed;
 
   const handleApprove = async () => {
+    // Find doctor record for current user
+    const { data: doctorData } = await supabase
+      .from('monte_doctors')
+      .select('id, full_name, license_no, signature_url')
+      .eq('user_id', user?.id)
+      .single();
+
     const { error } = await supabase
       .from('monte_reports')
-      .update({ status: 'approved', approved_at: new Date().toISOString() })
+      .update({
+        status: 'approved',
+        approved_at: new Date().toISOString(),
+        approved_by: doctorData?.id || null,
+      })
       .eq('id', id);
     if (error) toast.error(error.message);
-    else { toast.success('อนุมัติแล้ว'); setReport({ ...report, status: 'approved' }); }
+    else {
+      toast.success('อนุมัติแล้ว');
+      setReport({ ...report, status: 'approved', approved_by: doctorData?.id, monte_doctors: doctorData });
+    }
   };
 
   const handleReject = async () => {
