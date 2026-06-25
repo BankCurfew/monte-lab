@@ -20,7 +20,7 @@ const S = {
   warn: '#d4a017',
 } as const;
 
-export function MonteAnalysisView({ analysis, patient, report, allReports, parsedValues, doctor, role, onEditRecommendation }: {
+export function MonteAnalysisView({ analysis, patient, report, allReports, parsedValues, doctor, role, onEditRecommendation, customRecommendations }: {
   analysis: MonteAnalysis;
   patient?: { hn?: string; first_name?: string; last_name?: string; date_of_birth?: string | null; gender?: string | null };
   report?: { test_date?: string; lab_name?: string; status?: string; approved_at?: string };
