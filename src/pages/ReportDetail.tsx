@@ -162,20 +162,29 @@ export default function ReportDetail() {
       const html2canvas = (await import('html2canvas-pro')).default;
       const { jsPDF } = await import('jspdf');
 
+      // Force desktop width for A4 rendering
+      const el = analysisRef.current;
+      const originalStyle = el.style.cssText;
+      el.style.width = '800px';
+      el.style.maxWidth = '800px';
+      el.style.padding = '24px';
+
       // Hide edit buttons during capture
-      const editBtns = analysisRef.current.querySelectorAll<HTMLElement>('[data-no-print]');
+      const editBtns = el.querySelectorAll<HTMLElement>('[data-no-print]');
       editBtns.forEach(b => b.style.display = 'none');
 
-      const canvas = await html2canvas(analysisRef.current, {
+      const canvas = await html2canvas(el, {
         scale: 3,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
+        width: 800,
       });
 
-      // Restore edit buttons
+      // Restore
       editBtns.forEach(b => b.style.display = '');
+      el.style.cssText = originalStyle;
 
       const imgData = canvas.toDataURL('image/png');
 

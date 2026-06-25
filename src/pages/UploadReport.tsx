@@ -20,6 +20,7 @@ interface ParsedPreview {
   patientName: string | null;
   hn: string | null;
   testDate: string | null;
+  requestedBy: string | null;
   labName: string | null;
   testCount: number;
   rawText: string;
@@ -113,6 +114,9 @@ function extractPreview(text: string): ParsedPreview {
   const ageMatch = text.match(/Age[:\s]*(\d+)\s*Y/i);
   const sexMatch = text.match(/Sex[:\s]*(Male|Female|ชาย|หญิง)/i);
 
+  const requestedByMatch = text.match(/Requested\s*by\s*[:\s]*([^\n\r(]+)/i);
+  const requestedBy = requestedByMatch?.[1]?.trim() || null;
+
   const testPatterns = [
     'WBC', 'RBC', 'Hemoglobin', 'Hematocrit', 'Platelet', 'MCV', 'MCH', 'MCHC', 'RDW',
     'FBS', 'BUN', 'Creatinine', 'Cholesterol', 'HDL', 'LDL', 'Triglyceride',
@@ -139,6 +143,7 @@ function extractPreview(text: string): ParsedPreview {
     patientName: displayName,
     hn: hnMatch?.[1]?.trim() || null,
     testDate: dateMatch?.[1]?.trim() || null,
+    requestedBy,
     labName: labMatch?.[1]?.trim() || null,
     testCount: detectedTests.length,
     rawText: text.substring(0, 500),
@@ -175,7 +180,7 @@ export default function UploadReport() {
         const preview = extractPreview(text);
         setFiles(prev => prev.map(f => f.id === pdf.id ? { ...f, status: 'pending', preview } : f));
       } catch {
-        setFiles(prev => prev.map(f => f.id === pdf.id ? { ...f, status: 'pending', preview: { patientName: null, hn: null, testDate: null, labName: null, testCount: 0, rawText: '', detectedTests: [] } } : f));
+        setFiles(prev => prev.map(f => f.id === pdf.id ? { ...f, status: 'pending', preview: { patientName: null, hn: null, testDate: null, requestedBy: null, labName: null, testCount: 0, rawText: '', detectedTests: [] } } : f));
       }
     });
   };
@@ -256,6 +261,7 @@ export default function UploadReport() {
             patient_id: patientId,
             test_date: pdf.preview?.testDate || new Date().toISOString().slice(0, 10),
             lab_name: pdf.preview?.labName || null,
+            requested_by_name: pdf.preview?.requestedBy || null,
             raw_pdf_url: urlData.publicUrl,
             created_by: user?.id,
             source: 'upload',
