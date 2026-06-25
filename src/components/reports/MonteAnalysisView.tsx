@@ -286,7 +286,7 @@ function RecommendationSection({ analysis, role, onEditRecommendation, customRec
                   {item.testName} ({item.testNameTh}) — ค่า {item.value} {item.unit}
                 </div>
                 {role === 'doctor' && onEditRecommendation && !isEditing && (
-                  <button onClick={() => { setEditIdx(idx); setEditText(customText || `${item.interpretation}\n💊 ${item.recommendation}`); }}
+                  <button data-no-print onClick={() => { setEditIdx(idx); setEditText(customText || `${item.interpretation}\n💊 ${item.recommendation}`); }}
                     style={{ background: '#fff', border: '1px solid #2A8C8C', borderRadius: 6, padding: '3px 10px', fontSize: '7.5pt', color: '#2A8C8C', cursor: 'pointer', whiteSpace: 'nowrap', marginLeft: 8 }}>
                     แก้ไข
                   </button>

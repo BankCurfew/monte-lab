@@ -162,14 +162,22 @@ export default function ReportDetail() {
       const html2canvas = (await import('html2canvas-pro')).default;
       const { jsPDF } = await import('jspdf');
 
+      // Hide edit buttons during capture
+      const editBtns = analysisRef.current.querySelectorAll<HTMLElement>('[data-no-print]');
+      editBtns.forEach(b => b.style.display = 'none');
+
       const canvas = await html2canvas(analysisRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
       });
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+      // Restore edit buttons
+      editBtns.forEach(b => b.style.display = '');
+
+      const imgData = canvas.toDataURL('image/png');
 
       const pdfWidth = 210;
       const imgHeight = (canvas.height * pdfWidth) / canvas.width;
