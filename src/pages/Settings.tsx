@@ -104,6 +104,8 @@ export default function Settings() {
   const [newDoctorName, setNewDoctorName] = useState('');
   const [newLicenseNo, setNewLicenseNo] = useState('');
   const [fetching, setFetching] = useState(false);
+  const [schedules, setSchedules] = useState<string[]>([]);
+  const [newTime, setNewTime] = useState('09:00');
   const [clinic, setClinic] = useState({ clinic_name: '', phone: '', email: '', line_id: '', address: '', disclaimer: '' });
   const [clinicId, setClinicId] = useState<string | null>(null);
   const [clinicEditing, setClinicEditing] = useState(false);
@@ -248,26 +250,37 @@ export default function Settings() {
           <div className="border-t border-[#E2E8F0] pt-4">
             <div className="flex items-center gap-2 mb-3">
               <Clock className="h-4 w-4 text-[#5A6B7C]" />
-              <span className="text-sm font-medium text-[#1A2B3C]">ตั้งเวลาตรวจสอบอัตโนมัติ</span>
+              <span className="text-sm font-medium text-[#1A2B3C]">ตั้งเวลาตรวจสอบอัตโนมัติ (เวลาไทย GMT+7)</span>
             </div>
-            <div className="flex gap-3 items-end">
-              <div className="flex-1">
-                <label className="block text-xs text-[#5A6B7C] mb-1">ทุกกี่นาที</label>
-                <select
-                  value={fetchInterval}
-                  onChange={e => setFetchInterval(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-sm"
-                >
-                  <option value="5">ทุก 5 นาที</option>
-                  <option value="15">ทุก 15 นาที</option>
-                  <option value="30">ทุก 30 นาที</option>
-                  <option value="60">ทุก 1 ชั่วโมง</option>
-                </select>
+
+            {schedules.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {schedules.sort().map(t => (
+                  <span key={t} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E0F5F5] text-[#006B6E] rounded-lg text-sm font-medium">
+                    {t} น.
+                    <button onClick={() => { setSchedules(schedules.filter(s => s !== t)); toast.success(`ลบเวลา ${t} แล้ว`); }}
+                      className="text-[#94A3B8] hover:text-red-500 text-xs">✕</button>
+                  </span>
+                ))}
               </div>
-              <button
-                onClick={handleSaveFetchSchedule}
-                className="px-4 py-2 border border-[#00868A] text-[#006B6E] rounded-xl text-sm font-medium hover:bg-[#E0F5F5]"
-              >
+            )}
+
+            <div className="flex gap-3 items-end">
+              <div>
+                <label className="block text-xs text-[#5A6B7C] mb-1">เพิ่มเวลา</label>
+                <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)}
+                  className="px-3 py-2 border border-[#E2E8F0] rounded-xl text-sm" />
+              </div>
+              <button onClick={() => {
+                if (!schedules.includes(newTime)) {
+                  setSchedules([...schedules, newTime]);
+                  toast.success(`เพิ่มเวลา ${newTime} น.`);
+                }
+              }} className="px-4 py-2 bg-[#00868A] text-white rounded-xl text-sm font-medium hover:bg-[#006B6E]">
+                เพิ่ม
+              </button>
+              <button onClick={() => toast.success(`บันทึกตาราง ${schedules.length} เวลา`)}
+                className="px-4 py-2 border border-[#00868A] text-[#006B6E] rounded-xl text-sm font-medium hover:bg-[#E0F5F5]">
                 บันทึก
               </button>
             </div>
