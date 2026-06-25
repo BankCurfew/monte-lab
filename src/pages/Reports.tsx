@@ -83,7 +83,7 @@ export default function Reports() {
                 <td className="px-4 py-3 text-sm">{r.lab_name || '-'}</td>
                 <td className="px-4 py-3 text-sm text-gray-500">{r.source === 'gmail' ? '📧 Email' : '📤 Upload'}</td>
                 <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-1 rounded-full ${statusColor[r.status] || ''}`}>{statusLabel[r.status] || r.status}</span>
+                  <span className={`text-xs px-2 py-1 rounded-full ${statusColor[r.status] || ''} ${r.status === 'analyzing' ? 'animate-pulse' : ''}`}>{statusLabel[r.status] || r.status}</span>
                 </td>
               </tr>
             ))}

@@ -31,3 +31,13 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
 /* Transitions */
 * { transition-property: background-color, border-color, color, opacity, transform; transition-duration: 150ms; }
 a, button { transition-duration: 200ms; }
+
+/* Analysis animations */
+@keyframes progressIndeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+@keyframes fadeGreen {
+  0% { background-color: #d1fae5; }
+  100% { background-color: white; }
+}
