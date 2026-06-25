@@ -40,7 +40,7 @@ export default function App() {
                 <Route path="upload" element={<RoleGuard roles={['admin', 'doctor']}><UploadReport /></RoleGuard>} />
                 <Route path="patients" element={<RoleGuard roles={['admin', 'doctor']}><Patients /></RoleGuard>} />
                 <Route path="patients/:id" element={<RoleGuard roles={['admin', 'doctor']}><PatientDetail /></RoleGuard>} />
-                <Route path="settings" element={<RoleGuard roles={['admin', 'doctor']}><Settings /></RoleGuard>} />
+                <Route path="settings" element={<Settings />} />
               </Route>
             </Routes>
           </Suspense>

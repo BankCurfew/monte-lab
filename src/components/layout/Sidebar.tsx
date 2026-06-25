@@ -9,7 +9,7 @@ const navItems = [
   { to: '/reports', icon: FileText, label: 'รายงานผลเลือด', roles: ['admin', 'doctor', 'staff'] },
   { to: '/upload', icon: Upload, label: 'อัปโหลด PDF', roles: ['admin', 'doctor'] },
   { to: '/patients', icon: Users, label: 'ผู้ป่วย', roles: ['admin', 'doctor'] },
-  { to: '/settings', icon: Settings, label: 'ตั้งค่า', roles: ['admin'] },
+  { to: '/settings', icon: Settings, label: 'ตั้งค่า', roles: ['admin', 'doctor', 'staff'] },
 ];
 
 export function Sidebar() {

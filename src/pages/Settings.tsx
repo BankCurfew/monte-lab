@@ -80,6 +80,18 @@ export default function Settings() {
     );
   }
 
+  if (role === 'staff') {
+    return (
+      <div className="max-w-3xl mx-auto space-y-8">
+        <h2 className="text-xl lg:text-2xl font-bold text-[#1A2B3C]">โปรไฟล์</h2>
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <p className="text-sm text-[#5A6B7C]">อีเมล</p>
+          <p className="font-medium text-[#1A2B3C]">{user?.email}</p>
+        </div>
+      </div>
+    );
+  }
+
   if (role !== 'admin') return null;
 
   return (
