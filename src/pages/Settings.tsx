@@ -106,11 +106,9 @@ export default function Settings() {
   const [fetching, setFetching] = useState(false);
   const [schedules, setSchedules] = useState<string[]>([]);
   const [newTime, setNewTime] = useState('09:00');
-  void fetchInterval; void handleSaveFetchSchedule;
   const [clinic, setClinic] = useState({ clinic_name: '', phone: '', email: '', line_id: '', address: '', disclaimer: '' });
   const [clinicId, setClinicId] = useState<string | null>(null);
   const [clinicEditing, setClinicEditing] = useState(false);
-  const [fetchInterval, setFetchInterval] = useState('15');
   const [gmailEmail, setGmailEmail] = useState('lab.montehair@gmail.com');
 
   useEffect(() => {
@@ -135,9 +133,6 @@ export default function Settings() {
     setFetching(false);
   };
 
-  const handleSaveFetchSchedule = () => {
-    toast.success(`ตั้งค่า auto-fetch ทุก ${fetchInterval} นาที สำหรับ ${gmailEmail}`);
-  };
 
   // Doctor profile — show own signature upload + editable details
   if (role === 'doctor') {
