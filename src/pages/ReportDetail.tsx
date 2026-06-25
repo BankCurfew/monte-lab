@@ -73,11 +73,8 @@ export default function ReportDetail() {
       });
   }, [id]);
 
-  if (!report) return <div className="text-center py-12 text-gray-400">กำลังโหลด...</div>;
-
-  const patient = report.monte_patients;
-
   const aggregatedParsed = useMemo(() => {
+    if (!report) return {};
     const merged: Record<string, any> = {};
     for (const r of allPatientReports) {
       const pv = r.parsed_values || {};
@@ -87,15 +84,17 @@ export default function ReportDetail() {
       }
     }
     return Object.keys(merged).length > 0 ? merged : (report.parsed_values || {});
-  }, [allPatientReports, report.parsed_values]);
-
-  const parsed = aggregatedParsed;
-  void report.flags;
+  }, [allPatientReports, report]);
 
   const monteAnalysis = useMemo(
-    () => Object.keys(parsed).length > 0 ? generateMonteAnalysis(parsed) : null,
-    [parsed]
+    () => Object.keys(aggregatedParsed).length > 0 ? generateMonteAnalysis(aggregatedParsed) : null,
+    [aggregatedParsed]
   );
+
+  if (!report) return <div className="text-center py-12 text-gray-400">กำลังโหลด...</div>;
+
+  const patient = report.monte_patients;
+  const parsed = aggregatedParsed;
 
   const handleApprove = async () => {
     const { error } = await supabase
