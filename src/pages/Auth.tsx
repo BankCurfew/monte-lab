@@ -24,11 +24,8 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f0fafa] to-[#e8f4f4] px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#00868A] rounded-2xl mb-4 shadow-lg">
-            <span className="text-white text-2xl font-bold">M</span>
-          </div>
-          <h1 className="text-3xl font-bold text-[#00868A] tracking-[4px]" style={{ fontFamily: 'system-ui' }}>MONTE</h1>
-          <p className="text-xs text-gray-400 tracking-[2px] mt-1">LAB REPORT SYSTEM</p>
+          <img src="/brand/monte-logo-primary.png" alt="Monte Hair Clinic" className="h-14 mx-auto mb-2" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          <p className="text-xs text-[#6B7280] tracking-[2px] mt-1">LAB REPORT SYSTEM</p>
         </div>
 
         <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-xl p-8 space-y-5">

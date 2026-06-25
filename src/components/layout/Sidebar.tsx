@@ -23,8 +23,7 @@ export function Sidebar() {
     <>
       <div className="p-5 border-b border-white/20 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-[4px]" style={{ fontFamily: 'system-ui' }}>MONTE</h1>
-          <p className="text-[10px] text-white/60 tracking-[2px] mt-0.5">HAIR CLINIC</p>
+          <img src="/brand/monte-logo-white.png" alt="Monte Hair Clinic" className="h-8" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerHTML = '<h1 class="text-2xl font-bold tracking-[4px]">MONTE</h1><p class="text-[10px] text-white/60 tracking-[2px] mt-0.5">HAIR CLINIC</p>'; }} />
         </div>
         <button onClick={() => setMobileOpen(false)} className="lg:hidden p-1 hover:bg-white/10 rounded">
           <X className="h-5 w-5" />
