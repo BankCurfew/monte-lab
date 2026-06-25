@@ -1,31 +1,5 @@
 import type { MonteAnalysis } from '@/lib/monte-analysis';
 
-// Hair-optimal reference ranges (Monte clinic SOP)
-const HAIR_REF: Record<string, { min?: number; max?: number; label: string }> = {
-  ferritin: { min: 70, label: '> 70' },
-  hemoglobin: { min: 12, label: '> 12' },
-  hematocrit: { min: 36, label: '> 36' },
-  rbc: { min: 4, label: '> 4.0' },
-  vitamin_d: { min: 40, max: 70, label: '40-70' },
-  tsh: { min: 0.4, max: 4.0, label: '0.4-4.0' },
-  dheas: { max: 340, label: '< 340' },
-  free_testosterone: { max: 37.10, label: '< 37.10' },
-};
-
-function hairStatus(key: string, value: number): 'good' | 'watch' | 'bad' | null {
-  const ref = HAIR_REF[key];
-  if (!ref || typeof value !== 'number') return null;
-  if (ref.min && value < ref.min) return 'bad';
-  if (ref.max && value > ref.max) return 'bad';
-  return 'good';
-}
-
-const HAIR_STATUS_STYLE = {
-  good: { text: 'ปกติ', color: 'text-emerald-600' },
-  watch: { text: 'เฝ้าระวัง', color: 'text-amber-600' },
-  bad: { text: '⚠️ ดูแลเรื่องสุขภาพเส้นผม', color: 'text-red-600' },
-};
-
 interface ParsedTest {
   value: number | string;
   unit?: string;
@@ -34,296 +8,306 @@ interface ParsedTest {
   ref_max?: number;
 }
 
-export function MonteAnalysisView({ analysis, patient, report, allReports, parsedValues }: {
+const S = {
+  teal: '#2A8C8C',
+  red: '#c0392b',
+  orange: '#e67e22',
+  yellow: '#d4a017',
+  green: '#27866a',
+  ok: '#27866a',
+  low: '#c0392b',
+  warn: '#d4a017',
+} as const;
+
+export function MonteAnalysisView({ analysis, patient, report, allReports, parsedValues, doctor }: {
   analysis: MonteAnalysis;
-  patient?: { hn?: string; first_name?: string; last_name?: string; age?: number; gender?: string };
-  report?: { test_date?: string; lab_name?: string };
+  patient?: { hn?: string; first_name?: string; last_name?: string; date_of_birth?: string; gender?: string };
+  report?: { test_date?: string; lab_name?: string; status?: string; approved_at?: string };
   allReports?: { test_date?: string; lab_name?: string }[];
   parsedValues?: Record<string, Record<string, ParsedTest>>;
+  doctor?: { full_name?: string; license_no?: string } | null;
 }) {
   const allTests = parsedValues
     ? Object.values(parsedValues).reduce((acc, group) => ({ ...acc, ...group }), {} as Record<string, ParsedTest>)
     : {};
-  const testEntries = Object.entries(allTests);
-  const flaggedItems = analysis.items.filter(i => i.status !== 'normal' && i.status !== 'negative');
 
-  // Category grouping for page 2
-  const cbcKeys = ['hemoglobin', 'hematocrit', 'rbc', 'wbc', 'mcv', 'mch', 'mchc', 'rdw', 'platelet', 'pmn_neutrophil', 'lymphocyte', 'monocyte', 'eosinophil', 'basophil', 'rbc_morphology', 'platelet_smear'];
-  const vitaminKeys = ['ferritin', 'vitamin_d'];
-  const hormoneKeys = ['tsh', 'free_testosterone', 'dheas', 'ana'];
+  const age = patient?.date_of_birth
+    ? Math.floor((Date.now() - new Date(patient.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+    : null;
+  const sex = patient?.gender === 'male' ? 'ชาย' : patient?.gender === 'female' ? 'หญิง' : patient?.gender || '-';
 
-  const categorize = (keys: string[]) =>
-    testEntries.filter(([k]) => keys.some(ck => k.toLowerCase().replace(/[\s-_]/g, '').includes(ck.replace(/[\s-_]/g, ''))));
-
-  const cbcTests = categorize(cbcKeys);
-  const vitaminTests = categorize(vitaminKeys);
-  const hormoneTests = categorize(hormoneKeys);
-
-  const TH = { background: '#00868A' };
-
-  const renderTestRow = ([name, test]: [string, ParsedTest], i: number) => {
-    const val = test.value;
-    const numVal = typeof val === 'number' ? val : parseFloat(String(val));
-    const flag = test.flag;
-    const rowBg = flag === 'high' ? 'bg-red-50' : flag === 'low' ? 'bg-amber-50' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50/30';
-    const statusText = !flag ? 'normal' : flag === 'high' ? 'สูง' : 'ต่ำ';
-    const statusColor = !flag ? 'text-emerald-600' : flag === 'high' ? 'text-red-600' : 'text-amber-600';
-    const refRange = test.ref_min != null && test.ref_max != null ? `${test.ref_min}-${test.ref_max}` : '-';
-    const nameKey = name.toLowerCase().replace(/[\s-_()]/g, '');
-    const hs = !isNaN(numVal) ? hairStatus(nameKey, numVal) : null;
-    const hairRef = Object.entries(HAIR_REF).find(([k]) => nameKey.includes(k));
-
-    return (
-      <tr key={name} className={`border-t border-gray-100 ${rowBg}`}>
-        <td className="px-3 py-1.5 text-[13px] font-medium text-gray-800">{name}</td>
-        <td className="px-3 py-1.5 text-[13px] text-right font-mono font-semibold">{val}</td>
-        <td className="px-3 py-1.5 text-[12px] text-gray-400">{refRange}</td>
-        <td className="px-3 py-1.5 text-[12px] text-gray-500">{test.unit || '-'}</td>
-        <td className={`px-3 py-1.5 text-[12px] text-center font-semibold ${statusColor}`}>{statusText}</td>
-        <td className="px-3 py-1.5 text-[12px] text-gray-400">{hairRef ? hairRef[1].label : '-'}</td>
-        <td className="px-3 py-1.5 text-[12px] text-gray-400">{refRange}</td>
-        <td className={`px-3 py-1.5 text-[12px] text-center ${hs ? HAIR_STATUS_STYLE[hs].color : 'text-gray-400'}`}>
-          {hs ? HAIR_STATUS_STYLE[hs].text : '-'}
-        </td>
-      </tr>
-    );
+  const statusIcon = (flag?: string | null) => {
+    if (!flag) return <span style={{ color: S.ok, fontWeight: 700 }}>✓</span>;
+    if (flag === 'low') return <span style={{ color: S.low, fontWeight: 700 }}>⬇</span>;
+    if (flag === 'high') return <span style={{ color: S.warn, fontWeight: 700 }}>⚡</span>;
+    return <span style={{ color: S.ok }}>✓</span>;
   };
 
-  const renderCategoryTable = (title: string, tests: [string, ParsedTest][]) => {
-    if (tests.length === 0) return null;
-    return (
-      <div className="mb-6">
-        <h3 className="text-sm font-bold text-gray-700 mb-2">{title}</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={TH}>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-white">รายการ</th>
-                <th className="px-3 py-2 text-right text-xs font-semibold text-white">ค่าปกติ ผญ.</th>
-                <th className="px-3 py-2 text-right text-xs font-semibold text-white">ค่าปกติ ผช.</th>
-                <th className="px-3 py-2 text-right text-xs font-semibold text-white">ค่า ผล</th>
-                <th className="px-3 py-2 text-center text-xs font-semibold text-white">สถานะ</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-white">หน่วย</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-white">คำแนะนำ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tests.map(([name, test], i) => {
-                const flag = test.flag;
-                const rowBg = flag === 'high' ? 'bg-red-50' : flag === 'low' ? 'bg-amber-50' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50/30';
-                const statusText = !flag ? 'normal' : flag;
-                const statusColor = !flag ? 'text-emerald-600' : flag === 'high' ? 'text-red-600' : 'text-amber-600';
-                const refRange = test.ref_min != null && test.ref_max != null ? `${test.ref_min}-${test.ref_max}` : '-';
-                const nameKey = name.toLowerCase().replace(/[\s-_()]/g, '');
-                const hs = typeof test.value === 'number' ? hairStatus(nameKey, test.value) : null;
-                return (
-                  <tr key={name} className={`border-t border-gray-100 ${rowBg}`}>
-                    <td className="px-3 py-1.5 text-[13px] text-gray-800">{name}</td>
-                    <td className="px-3 py-1.5 text-[12px] text-right text-gray-400">{refRange}</td>
-                    <td className="px-3 py-1.5 text-[12px] text-right text-gray-400">{refRange}</td>
-                    <td className="px-3 py-1.5 text-[13px] text-right font-mono font-semibold">{test.value}</td>
-                    <td className={`px-3 py-1.5 text-[12px] text-center font-semibold ${statusColor}`}>{statusText}</td>
-                    <td className="px-3 py-1.5 text-[12px] text-gray-500">{test.unit || '-'}</td>
-                    <td className="px-3 py-1.5 text-[11px] text-gray-400 max-w-[180px]">
-                      {hs === 'bad' ? <span className="text-red-500">⚠️ ดูแลเรื่องสุขภาพเส้นผม</span> : '-'}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  };
+  const leftTests: [string, string, ParsedTest | undefined][] = [
+    ['Hemoglobin (Hb)', 'hb', allTests.hb],
+    ['Hematocrit (Hct)', 'hct', allTests.hct],
+    ['RBC Count', 'rbc', allTests.rbc],
+    ['WBC Count', 'wbc', allTests.wbc],
+    ['MCV', 'mcv', allTests.mcv],
+    ['MCH', 'mch', allTests.mch],
+    ['MCHC', 'mchc', allTests.mchc],
+    ['RDW', 'rdw', allTests.rdw],
+    ['Platelet', 'plt', allTests.plt],
+    ['Neutrophil', 'pmn_neutrophil', allTests.pmn_neutrophil],
+    ['Lymphocyte', 'lymphocyte', allTests.lymphocyte],
+  ];
 
-  const scoreColor = analysis.hairHealthScore >= 80 ? 'text-emerald-600' : analysis.hairHealthScore >= 50 ? 'text-amber-600' : 'text-red-600';
-  const scoreDot = analysis.hairHealthScore >= 80 ? 'bg-emerald-500' : analysis.hairHealthScore >= 50 ? 'bg-amber-500' : 'bg-red-500';
+  const rightTests: [string, string, ParsedTest | undefined][] = [
+    ['Ferritin', 'ferritin', allTests.ferritin],
+    ['Vitamin D 025-OH', 'vitamin_d', allTests.vitamin_d],
+    ['TSH', 'tsh', allTests.tsh],
+    ['Free Testosterone', 'testosterone', allTests.testosterone],
+    ['DHEA-S', 'dheas', allTests.dheas],
+    ['ANA (ANF/FANA)', 'ana', allTests.ana],
+    ['RBC Morphology', 'rbc_morphology', allTests.rbc_morphology],
+    ['Platelet (smear)', 'platelet_smear', allTests.platelet_smear],
+    ['Monocyte', 'monocyte', allTests.monocyte],
+    ['Eosinophil / Baso', 'eosinophil', allTests.eosinophil],
+  ];
+
+  const renderLabTable = (tests: [string, string, ParsedTest | undefined][]) => (
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt' }}>
+      <thead>
+        <tr>
+          {['รายการ', 'ค่า', 'หน่วย', 'ค่าอ้างอิง', 'สถานะ'].map(h => (
+            <th key={h} style={{ background: '#e8f4f4', color: S.teal, fontWeight: 700, padding: '3px 5px', textAlign: 'left', borderBottom: `1.5px solid ${S.teal}`, fontSize: '7.5pt' }}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {tests.filter(([,, t]) => t).map(([label,, test], i) => {
+          const t = test!;
+          const ref = t.ref_min != null && t.ref_max != null ? `${t.ref_min}–${t.ref_max}` : t.ref_min != null ? `≥ ${t.ref_min}` : '-';
+          return (
+            <tr key={label} style={{ background: i % 2 === 1 ? '#fafcfc' : undefined }}>
+              <td style={{ padding: '2.5px 5px', borderBottom: '0.5px solid #e0e0e0', fontWeight: 600, color: '#333' }}>{label}</td>
+              <td style={{ padding: '2.5px 5px', borderBottom: '0.5px solid #e0e0e0', fontWeight: 700, color: '#1a1a1a' }}>{t.value}</td>
+              <td style={{ padding: '2.5px 5px', borderBottom: '0.5px solid #e0e0e0', color: '#666' }}>{t.unit || '—'}</td>
+              <td style={{ padding: '2.5px 5px', borderBottom: '0.5px solid #e0e0e0', color: '#666' }}>{ref}</td>
+              <td style={{ padding: '2.5px 5px', borderBottom: '0.5px solid #e0e0e0', textAlign: 'center' }}>{statusIcon(t.flag)}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
 
   return (
-    <div className="space-y-0" style={{ fontFamily: "'Sarabun', 'Noto Sans Thai', sans-serif" }}>
+    <div style={{ fontFamily: "'Sarabun', 'Noto Sans Thai', 'Segoe UI', sans-serif", fontSize: '9.5pt', color: '#222', background: '#fff', padding: '24px', lineHeight: 1.45, maxWidth: '900px' }}>
 
-      {/* ===== PAGE 1 ===== */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        {/* Monte Header */}
-        <div className="px-6 pt-5 pb-3">
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: '#00868A' }}>MONTE</h1>
-          <p className="text-[11px] text-gray-400">Monte Hair Clinic</p>
+      {/* ── HEADER ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, borderBottom: `2.5px solid ${S.teal}`, paddingBottom: 6 }}>
+        <div>
+          <div style={{ fontSize: '26pt', fontWeight: 900, color: '#1a1a1a', letterSpacing: 3, lineHeight: 1 }}>MONTE</div>
+          <div style={{ fontSize: '7.5pt', color: '#888', letterSpacing: 2, marginTop: 1 }}>HAIR CLINIC</div>
         </div>
-
-        {/* Title */}
-        <div className="px-6 pb-2">
-          <h2 className="text-base font-bold text-gray-800">ในสรุปผลการตรวจเลือด</h2>
+        <div style={{ textAlign: 'center', flex: 1, paddingTop: 4 }}>
+          <div style={{ fontSize: '16pt', fontWeight: 700, color: S.teal }}>ใบสรุปผลการตรวจเลือด</div>
+          <div style={{ fontSize: '7.5pt', color: '#888', marginTop: 1 }}>Blood Test Summary Report</div>
         </div>
+        <div style={{ width: 80 }} />
+      </div>
 
-        {/* Patient Info — horizontal row with pipes */}
-        {patient && (
-          <div className="px-6 pb-3 text-sm text-gray-600">
-            <p>
-              ชื่อ-สกุล / HNAME: <span className="font-semibold">{patient.first_name} {patient.last_name}</span>
-              {' | '}HN: <span className="font-semibold">{patient.hn || '-'}</span>
-              {patient.age && <>{' | '}อายุ AGE: <span className="font-semibold">{patient.age} ปี</span></>}
-              {patient.gender && <>{' | '}เพศ: <span className="font-semibold">{patient.gender === 'male' ? 'ชาย' : 'หญิง'}</span></>}
-            </p>
-            <p>
-              {report?.test_date && <>วันที่ตรวจ/Collected: <span className="font-semibold">{report.test_date}</span></>}
-              {report?.lab_name && <>{' | '}แล็บ LAB: <span className="font-semibold">{report.lab_name}</span></>}
-            </p>
+      {/* ── PATIENT INFO ── */}
+      <div style={{ background: '#f5f5f5', borderRadius: 4, padding: '6px 10px', marginBottom: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 20px', fontSize: '8.5pt' }}>
+        <div><span style={{ color: '#777' }}>ชื่อ-นามสกุล / NAME:</span> <span style={{ fontWeight: 600 }}>{patient?.first_name} {patient?.last_name}</span></div>
+        <div><span style={{ color: '#777' }}>HN:</span> <span style={{ fontWeight: 600 }}>{patient?.hn || '-'}</span></div>
+        <div><span style={{ color: '#777' }}>เพศ / SEX:</span> <span style={{ fontWeight: 600 }}>{sex}</span></div>
+        <div><span style={{ color: '#777' }}>อายุ / AGE:</span> <span style={{ fontWeight: 600 }}>{age ? `${age} ปี` : '-'}</span></div>
+        <div><span style={{ color: '#777' }}>วันที่ตรวจ/วันที่รายงาน:</span> <span style={{ fontWeight: 600 }}>{report?.test_date || '-'}</span></div>
+        <div><span style={{ color: '#777' }}>ห้อง LAB:</span> <span style={{ fontWeight: 600 }}>{report?.lab_name || '-'}</span></div>
+      </div>
+
+      {/* ── OVERVIEW ── */}
+      <div style={{ fontSize: '10.5pt', fontWeight: 700, color: S.teal, marginBottom: 5 }}>สรุปภาพรวม / Overview</div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        {analysis.urgentActions.length > 0 || allTests.hb?.flag ? (
+          <div style={{ flex: 1, borderRadius: 5, padding: '7px 10px', color: '#fff', background: `linear-gradient(135deg, #e85d5d, ${S.red})` }}>
+            <div style={{ fontSize: '10pt', fontWeight: 700 }}>ภาวะโลหิตจาง</div>
+            <div style={{ fontSize: '7.5pt', opacity: 0.92, marginTop: 1 }}>Hb, Hct, RBC ต่ำกว่าปกติ</div>
           </div>
-        )}
-
-        {/* Overview Section */}
-        <div className="px-6 py-3">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm font-bold" style={{ color: '#00868A' }}>สรุปภาพรวม / Overview</span>
+        ) : null}
+        {allTests.vitamin_d?.flag === 'low' ? (
+          <div style={{ flex: 1, borderRadius: 5, padding: '7px 10px', color: '#fff', background: `linear-gradient(135deg, #f0c040, ${S.yellow})` }}>
+            <div style={{ fontSize: '10pt', fontWeight: 700 }}>วิตามินดีต่ำมาก</div>
+            <div style={{ fontSize: '7.5pt', opacity: 0.92, marginTop: 1 }}>Vitamin D {allTests.vitamin_d.value} (ควรมากกว่า30)</div>
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            {/* Left: รายละเอียดเลือด */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">รายละเอียดเลือด</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">{analysis.summary}</p>
-              {flaggedItems.length > 0 && (
-                <ul className="mt-2 space-y-1">
-                  {flaggedItems.slice(0, 4).map((item, i) => (
-                    <li key={i} className="text-sm text-amber-700">• {item.testName}: {item.value} {item.unit}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            {/* Right: ดัชนีสุขภาพเส้นผม */}
-            <div className="bg-gray-50 rounded-lg p-4 flex items-center gap-4">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-1">ดัชนีสุขภาพเส้นผม</h3>
-                <p className="text-xs text-gray-400">ดัชนีสุขภาพ / Hair</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={`w-3 h-3 rounded-full ${scoreDot}`} />
-                  <span className="text-xs text-gray-500">
-                    {analysis.hairHealthScore >= 80 ? 'ปกติ' : analysis.hairHealthScore >= 50 ? 'เฝ้าระวัง' : 'ต้องดูแล'}
-                  </span>
-                </div>
-              </div>
-              <div className={`text-4xl font-bold ${scoreColor} ml-auto`}>
-                {analysis.hairHealthScore}
-              </div>
-            </div>
+        ) : null}
+        <div style={{ flex: 1, borderRadius: 5, padding: '7px 10px', color: '#fff', background: `linear-gradient(135deg, #48b084, ${S.green})` }}>
+          <div style={{ fontSize: '10pt', fontWeight: 700 }}>ดัชนีสุขภาพเส้นผม</div>
+          <div style={{ fontSize: '7.5pt', opacity: 0.92, marginTop: 1 }}>
+            <span style={{ fontSize: '18pt', fontWeight: 900 }}>{analysis.hairHealthScore}</span>/100
+            {allReports && allReports.length > 1 && <span> &nbsp;({allReports.length} รายงานรวม)</span>}
           </div>
-        </div>
-
-        {/* Test Results Table — ALL tests from parsed_values */}
-        <div className="px-6 py-3">
-          <h3 className="text-sm font-bold mb-2" style={{ color: '#00868A' }}>ผลการตรวจ / Test Results</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={TH}>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-white">รายการ</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-white">ค่า</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-white">ค่าปกติ</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-white">หน่วย</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-white">สถานะ</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-white">ค่าที่ดีสำหรับผม</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-white">ค่าอ้างอิง</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-white">สถานะ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {testEntries.length > 0
-                  ? testEntries.map((entry, i) => renderTestRow(entry, i))
-                  : analysis.items.map((item, i) => (
-                    <tr key={i} className={`border-t border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
-                      <td className="px-3 py-1.5 text-[13px] font-medium text-gray-800">{item.testName}</td>
-                      <td className="px-3 py-1.5 text-[13px] text-right font-mono font-semibold">{item.value}</td>
-                      <td className="px-3 py-1.5 text-[12px] text-gray-400">-</td>
-                      <td className="px-3 py-1.5 text-[12px] text-gray-500">{item.unit}</td>
-                      <td className={`px-3 py-1.5 text-[12px] text-center font-semibold ${item.status === 'normal' || item.status === 'negative' ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {item.status === 'normal' || item.status === 'negative' ? 'normal' : item.status}
-                      </td>
-                      <td className="px-3 py-1.5 text-[12px] text-gray-400">-</td>
-                      <td className="px-3 py-1.5 text-[12px] text-gray-400">-</td>
-                      <td className="px-3 py-1.5 text-[12px] text-gray-400">-</td>
-                    </tr>
-                  ))
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Recommendations — numbered paragraphs */}
-        {(analysis.urgentActions.length > 0 || analysis.items.some(i => i.recommendation)) && (
-          <div className="px-6 py-4 border-t border-gray-100">
-            <h3 className="text-sm font-bold mb-3" style={{ color: '#00868A' }}>คำแนะนำเบื้องต้น / Recommendations</h3>
-            <div className="space-y-4">
-              {analysis.items.filter(i => i.recommendation).map((item, i) => (
-                <div key={i} className="text-sm">
-                  <p className="font-bold text-gray-800">
-                    {i + 1}{' '}{item.testNameTh} ({item.value} {item.unit} — ค่าปกติ {
-                      item.status === 'low' ? '> ค่าที่ควร' : item.status === 'high' ? '< ค่าที่ควร' : 'ปกติ'
-                    })
-                  </p>
-                  <p className="text-gray-600 leading-relaxed mt-1 ml-4">{item.interpretation}</p>
-                  {item.recommendation && <p className="text-[#006B6E] mt-1 ml-4">💊 {item.recommendation}</p>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Footer — Page 1 */}
-        <div className="px-6 py-2 bg-gray-50 border-t border-gray-100 flex justify-between text-[10px] text-gray-400">
-          <div>
-            <p>Monte Hair Clinic · email: care@monteclinic.com · Tel: 02-XXX-XXXX · LINE: @monteclinic</p>
-            <p>ผลการวิเคราะห์นี้เป็นเพียงข้อเสนอแนะเบื้องต้น กรุณาปรึกษาแพทย์ก่อนตัดสินใจ</p>
-          </div>
-          <span>ก.1/ก.2</span>
         </div>
       </div>
 
-      {/* ===== PAGE 2 ===== */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden mt-6">
-        {/* Header */}
-        <div className="px-6 pt-5 pb-2 flex justify-between items-start">
+      {/* ── TEST RESULTS ── */}
+      <div style={{ background: S.teal, color: '#fff', padding: '5px 10px', borderRadius: 4, fontSize: '10pt', fontWeight: 700, marginBottom: 4 }}>ผลการตรวจ / Test Results</div>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+        <div style={{ flex: 1 }}>{renderLabTable(leftTests)}</div>
+        <div style={{ flex: 1 }}>{renderLabTable(rightTests)}</div>
+      </div>
+
+      {/* ── RECOMMENDATIONS ── */}
+      <div style={{ marginTop: 8 }}>
+        <div style={{ fontSize: '10.5pt', fontWeight: 700, color: S.teal, marginBottom: 5, fontStyle: 'italic' }}>คำแนะนำเบื้องต้น / Recommendations</div>
+
+        {analysis.items.filter(i => i.recommendation).map((item, idx) => {
+          const numColors = [S.red, S.orange, S.yellow, S.teal, S.green];
+          const headingColors = [S.red, S.orange, '#b8860b', S.teal, S.green];
+          const bg = numColors[idx] || S.teal;
+          const hc = headingColors[idx] || S.teal;
+          return (
+            <div key={idx} style={{ display: 'flex', marginBottom: 6, borderRadius: 4, overflow: 'hidden', background: '#fafafa', border: '0.5px solid #e8e8e8' }}>
+              <div style={{ width: 28, minWidth: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 7, color: '#fff', fontWeight: 900, fontSize: '12pt', background: bg }}>{idx + 1}</div>
+              <div style={{ padding: '6px 10px', flex: 1, fontSize: '8pt', lineHeight: 1.5 }}>
+                <div style={{ fontWeight: 700, color: hc, fontSize: '8.5pt', marginBottom: 2 }}>
+                  {item.testName} ({item.testNameTh}) — ค่า {item.value} {item.unit}
+                </div>
+                <p style={{ marginTop: 2, color: '#444' }}>{item.interpretation}</p>
+                {item.recommendation && <p style={{ marginTop: 2, color: '#444' }}>💊 {item.recommendation}</p>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── DISCLAIMER ── */}
+      <div style={{ marginTop: 6, fontSize: '7pt', color: '#888', borderLeft: `3px solid ${S.teal}`, paddingLeft: 8 }}>
+        ผลตรวจเลือดนี้เป็นเพียงข้อมูลเบื้องต้นเพื่อประกอบการพิจารณา ไม่ถือว่าเป็นการ วินิจฉัย หรือ สั่งยา หากมีข้อสงสัย กรุณาปรึกษาแพทย์ผู้เชี่ยวชาญ
+      </div>
+
+      {/* ── DOCTOR SIGNATURE ── */}
+      <div style={{ marginTop: 16, textAlign: 'right', fontSize: '8pt', color: '#555' }}>
+        {report?.status === 'approved' && doctor?.full_name ? (
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: '#00868A' }}>MONTE</h1>
-            <p className="text-[11px] text-gray-400">Diagnostic Panel & History, Monte Hair Clinic</p>
+            <div style={{ marginBottom: 4, fontSize: '9pt', color: S.teal, fontWeight: 600 }}>อนุมัติโดย</div>
+            <div style={{ fontWeight: 700, fontSize: '10pt', color: '#222' }}>{doctor.full_name}</div>
+            {doctor.license_no && <div style={{ fontSize: '7.5pt', color: '#777' }}>ใบอนุญาตเลขที่ {doctor.license_no}</div>}
+            <div style={{ fontSize: '7pt', color: '#999', marginTop: 2 }}>วันที่อนุมัติ: {report.approved_at ? new Date(report.approved_at).toLocaleDateString('th-TH') : '-'}</div>
           </div>
+        ) : (
+          <div>
+            <div style={{ color: '#aaa', marginBottom: 8 }}>ผ./ทพ. _________________________</div>
+            <div style={{ fontSize: '7pt', color: '#bbb' }}>รอลายเซ็นแพทย์</div>
+          </div>
+        )}
+      </div>
+
+      {/* ── FOOTER P1 ── */}
+      <div style={{ marginTop: 10, paddingTop: 6, borderTop: '1px solid #ccc', display: 'flex', justifyContent: 'space-between', fontSize: '7pt', color: '#999' }}>
+        <div><strong>Monte Hair Clinic</strong> &nbsp; โทร. 02-XXX-XXXX &nbsp; LINE: @monteclinic</div>
+        <div style={{ textAlign: 'right', fontSize: '6.5pt', maxWidth: '50%' }}>ผลการตรวจเลือดนี้เป็นเพียงข้อมูลเบื้องต้นสำหรับการพิจารณาร่วมกับแพทย์</div>
+      </div>
+      <div style={{ marginTop: 12, textAlign: 'right', fontSize: '8pt', color: '#555' }}>ก.1/ก.2</div>
+
+      {/* ═══════════ PAGE 2: TREND & HISTORY ═══════════ */}
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '2px dashed #ddd' }}>
+        {/* HEADER P2 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, borderBottom: `2.5px solid ${S.teal}`, paddingBottom: 6 }}>
+          <div>
+            <div style={{ fontSize: '26pt', fontWeight: 900, color: '#1a1a1a', letterSpacing: 3, lineHeight: 1 }}>MONTE</div>
+            <div style={{ fontSize: '7.5pt', color: '#888', letterSpacing: 2, marginTop: 1 }}>HAIR CLINIC</div>
+          </div>
+          <div style={{ textAlign: 'center', flex: 1, paddingTop: 4 }}>
+            <div style={{ fontSize: '16pt', fontWeight: 700, color: S.teal }}>รายละเอียดผลตรวจย้อนหลัง</div>
+            <div style={{ fontSize: '7.5pt', color: '#888', marginTop: 1 }}>Detailed Trend &amp; History</div>
+          </div>
+          <div style={{ width: 80 }} />
         </div>
 
-        <div className="px-6 py-3">
-          <h2 className="text-base font-bold text-gray-800 mb-1">รายละเอียดผลตรวจย้อนหลัง</h2>
-          {allReports && allReports.length > 1 && (
-            <p className="text-xs text-gray-400 mb-4">
-              ประวัติตรวจ {allReports.length} ครั้ง ({allReports.map(r => r.test_date).filter(Boolean).join(', ')})
-            </p>
-          )}
-
-          {/* CBC */}
-          {renderCategoryTable('CBC — ตรวจความสมบูรณ์ของเม็ดเลือด', cbcTests)}
-
-          {/* Vitamins */}
-          {renderCategoryTable('วิตามินและสารอาหาร', vitaminTests)}
-
-          {/* Hormones */}
-          {renderCategoryTable('ฮอร์โมน', hormoneTests)}
+        {/* Patient ID bar */}
+        <div style={{ background: '#f5f5f5', borderRadius: 4, padding: '5px 10px', marginBottom: 10, fontSize: '8.5pt' }}>
+          <span style={{ color: '#777' }}>HN</span> <span style={{ fontWeight: 600 }}>{patient?.hn || '-'}</span>
         </div>
+
+        {/* CBC Section */}
+        {renderCategorySection('CBC — ความสมบูรณ์เม็ดเลือด', [
+          ['Hemoglobin (Hb)', allTests.hb],
+          ['Hematocrit (Hct)', allTests.hct],
+          ['RBC Count', allTests.rbc],
+          ['MCV', allTests.mcv],
+          ['Platelet Count', allTests.plt],
+        ], report?.test_date)}
+
+        {/* Vitamin Section */}
+        {renderCategorySection('วิตามินและแร่ธาตุ', [
+          ['Ferritin', allTests.ferritin],
+          ['Vitamin D (25-OH)', allTests.vitamin_d],
+        ], report?.test_date)}
+
+        {/* Hormone Section */}
+        {renderCategorySection('ฮอร์โมน', [
+          ['TSH', allTests.tsh],
+          ['Free Testosterone', allTests.testosterone],
+          ['DHEA-S', allTests.dheas],
+        ], report?.test_date)}
 
         {/* Overall Trend Summary */}
-        <div className="px-6 py-4 border-t border-gray-100">
-          <h3 className="text-sm font-bold mb-2" style={{ color: '#00868A' }}>แนวโน้มและข้อเสนอแนะ / Overall Trend Summary</h3>
-          <p className="text-sm text-gray-600 leading-relaxed">{analysis.summary}</p>
+        <div style={{ fontSize: '10.5pt', fontWeight: 700, color: S.teal, marginBottom: 5 }}>บทสรุปแนวโน้มโดยรวม / Overall Trend Summary</div>
+        <div style={{ fontSize: '8.5pt', lineHeight: 1.65, color: '#333', padding: '6px 0' }}>
+          <p style={{ marginBottom: 6 }}>{analysis.summary}</p>
+          {analysis.urgentActions.map((a, i) => <p key={i} style={{ marginBottom: 6 }}>• {a}</p>)}
         </div>
 
-        {/* Footer — Page 2 */}
-        <div className="px-6 py-2 bg-gray-50 border-t border-gray-100 flex justify-between text-[10px] text-gray-400">
-          <div>
-            <p>Monte Hair Clinic · email: care@monteclinic.com · Tel: 02-XXX-XXXX · LINE: @monteclinic</p>
-            <p>ผลการวิเคราะห์นี้เป็นเพียงข้อเสนอแนะเบื้องต้น กรุณาปรึกษาแพทย์ก่อนตัดสินใจ</p>
-          </div>
-          <span>ก.2/ก.2</span>
+        {/* Disclaimer P2 */}
+        <div style={{ marginTop: 8, fontSize: '7pt', color: '#888', borderLeft: `3px solid ${S.teal}`, paddingLeft: 8 }}>
+          ผลตรวจเลือดนี้เป็นเพียงข้อมูลเบื้องต้นเพื่อประกอบการพิจารณา ไม่ถือว่าเป็นการ วินิจฉัย หรือ สั่งยา หากมีข้อสงสัย กรุณาปรึกษาแพทย์ผู้เชี่ยวชาญ
         </div>
+
+        <div style={{ marginTop: 10, paddingTop: 6, borderTop: '1px solid #ccc', display: 'flex', justifyContent: 'space-between', fontSize: '7pt', color: '#999' }}>
+          <div><strong>Monte Hair Clinic</strong> &nbsp; โทร. 02-XXX-XXXX &nbsp; LINE: @monteclinic</div>
+          <div style={{ textAlign: 'right', fontSize: '6.5pt', maxWidth: '50%' }}>ผลการตรวจเลือดนี้เป็นเพียงข้อมูลเบื้องต้นสำหรับการพิจารณาร่วมกับแพทย์</div>
+        </div>
+        <div style={{ marginTop: 12, textAlign: 'right', fontSize: '8pt', color: '#555' }}>ก.2/ก.2</div>
       </div>
+    </div>
+  );
+}
+
+function renderCategorySection(title: string, tests: [string, ParsedTest | undefined][], testDate?: string) {
+  const filtered = tests.filter(([, t]) => t) as [string, ParsedTest][];
+  if (filtered.length === 0) return null;
+
+  const TH = { background: '#2A8C8C' };
+  const thStyle = { padding: '3px 5px', textAlign: 'left' as const, fontSize: '7.5pt', color: '#fff', fontWeight: 700 };
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: '10.5pt', fontWeight: 700, color: '#2A8C8C', marginBottom: 5 }}>{title}</div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt' }}>
+        <thead>
+          <tr>
+            <th style={{ ...thStyle, background: '#e8f4f4', color: '#2A8C8C', borderBottom: '1.5px solid #2A8C8C' }}>รายการตรวจ</th>
+            <th style={{ ...thStyle, ...TH }}>{testDate || 'ล่าสุด'}</th>
+            <th style={{ ...thStyle, background: '#e8f4f4', color: '#2A8C8C', borderBottom: '1.5px solid #2A8C8C' }}>หน่วย</th>
+            <th style={{ ...thStyle, background: '#e8f4f4', color: '#2A8C8C', borderBottom: '1.5px solid #2A8C8C' }}>ค่าอ้างอิง</th>
+            <th style={{ ...thStyle, background: '#e8f4f4', color: '#2A8C8C', borderBottom: '1.5px solid #2A8C8C' }}>แนวโน้ม / สถานะ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map(([name, test], i) => {
+            const ref = test.ref_min != null && test.ref_max != null ? `${test.ref_min}–${test.ref_max}` : test.ref_min != null ? `≥ ${test.ref_min}` : '-';
+            const sc = !test.flag ? '#27866a' : test.flag === 'high' ? '#d4a017' : '#c0392b';
+            const statusText = !test.flag ? '→ ปกติ' : test.flag === 'low' ? '⬇ ต่ำกว่าเกณฑ์' : '⬆ สูงกว่าเกณฑ์';
+            return (
+              <tr key={name} style={{ background: i % 2 === 1 ? '#fafcfc' : undefined }}>
+                <td style={{ padding: '2.5px 5px', borderBottom: '0.5px solid #e0e0e0', fontWeight: 600, color: '#333' }}>{name}</td>
+                <td style={{ padding: '2.5px 5px', borderBottom: '0.5px solid #e0e0e0', fontWeight: 700, color: '#1a1a1a' }}>{test.value}</td>
+                <td style={{ padding: '2.5px 5px', borderBottom: '0.5px solid #e0e0e0', color: '#666' }}>{test.unit || '—'}</td>
+                <td style={{ padding: '2.5px 5px', borderBottom: '0.5px solid #e0e0e0', color: '#666' }}>{ref}</td>
+                <td style={{ padding: '2.5px 5px', borderBottom: '0.5px solid #e0e0e0', fontWeight: 700, color: sc }}>{statusText}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
