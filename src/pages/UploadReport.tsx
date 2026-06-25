@@ -223,7 +223,75 @@ export default function UploadReport() {
   };
 
   const analyzeAll = async () => {
-    toast.info('เริ่มวิเคราะห์ผลเลือด... (ต้อง deploy Edge Functions ก่อน)');
+    toast.info('กำลังวิเคราะห์ผลเลือด...');
+
+    for (const pdf of files) {
+      if (!pdf.reportId || !pdf.preview) continue;
+
+      // Build parsed values from detected tests in the PDF text
+      const fullText = await extractTextFromPdf(pdf.file);
+      const parsedValues: Record<string, Record<string, any>> = {};
+      const flags: any[] = [];
+
+      const ranges: Record<string, { min: number; max: number; unit: string; group: string }> = {
+        wbc: { min: 4500, max: 11000, unit: "/mm³", group: "cbc" },
+        rbc: { min: 4.0, max: 5.5, unit: "M/mm³", group: "cbc" },
+        hb: { min: 12.0, max: 16.0, unit: "g/dL", group: "cbc" },
+        hct: { min: 36, max: 47, unit: "%", group: "cbc" },
+        plt: { min: 150, max: 400, unit: "x10³/µL", group: "cbc" },
+        mcv: { min: 80, max: 100, unit: "fL", group: "cbc" },
+        mch: { min: 27, max: 33, unit: "pg", group: "cbc" },
+        mchc: { min: 32, max: 36, unit: "g/dL", group: "cbc" },
+        ferritin: { min: 20, max: 250, unit: "ng/mL", group: "vitamins" },
+        vitamin_d: { min: 30, max: 100, unit: "ng/mL", group: "vitamins" },
+        tsh: { min: 0.27, max: 4.2, unit: "mIU/L", group: "thyroid" },
+        dheas: { min: 80, max: 560, unit: "µg/dL", group: "hormones" },
+        testosterone: { min: 13.84, max: 53.35, unit: "ng/dL", group: "hormones" },
+      };
+
+      const patterns: Record<string, RegExp> = {
+        wbc: /WBC[^0-9]*([0-9,.]+)/i,
+        rbc: /RBC[^0-9]*([0-9,.]+)/i,
+        hb: /(?:Hemoglobin|Hb|HGB)[^0-9]*([0-9,.]+)/i,
+        hct: /(?:Hematocrit|Hct|HCT)[^0-9]*([0-9,.]+)/i,
+        plt: /(?:Platelet)[^0-9]*([0-9,.]+)/i,
+        mcv: /MCV[^0-9]*([0-9,.]+)/i,
+        mch: /MCH\b[^0-9C]*([0-9,.]+)/i,
+        mchc: /MCHC[^0-9]*([0-9,.]+)/i,
+        ferritin: /Ferritin[^0-9]*([0-9,.]+)/i,
+        vitamin_d: /(?:Vitamin\s*D|25.*Hydroxy)[^0-9]*([0-9,.]+)/i,
+        tsh: /TSH[^0-9]*([0-9,.]+)/i,
+        dheas: /DHEA[^0-9]*([0-9,.]+)/i,
+        testosterone: /Testosterone[^0-9]*([0-9,.]+)/i,
+      };
+
+      for (const [key, pattern] of Object.entries(patterns)) {
+        const match = fullText.match(pattern);
+        if (match) {
+          const value = parseFloat(match[1].replace(",", ""));
+          const ref = ranges[key];
+          if (!ref || isNaN(value)) continue;
+          const flag = value < ref.min ? "low" : value > ref.max ? "high" : null;
+          const group = ref.group;
+          if (!parsedValues[group]) parsedValues[group] = {};
+          parsedValues[group][key] = { value, unit: ref.unit, ref_min: ref.min, ref_max: ref.max, flag };
+          if (flag) flags.push({ test: key, value, severity: flag, note: `${flag === "low" ? "ต่ำ" : "สูง"}กว่าค่าปกติ` });
+        }
+      }
+
+      // Update report with parsed values
+      await supabase
+        .from('monte_reports')
+        .update({
+          parsed_values: parsedValues,
+          flags,
+          status: Object.keys(parsedValues).length > 0 ? 'ready' : 'pending',
+          lab_name: pdf.preview.labName || null,
+        })
+        .eq('id', pdf.reportId);
+    }
+
+    toast.success('วิเคราะห์เสร็จสิ้น');
     navigate('/reports');
   };
 
