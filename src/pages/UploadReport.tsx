@@ -143,8 +143,9 @@ export default function UploadReport() {
       setFiles(prev => prev.map(f => f.id === pdf.id ? { ...f, status: 'uploading' } : f));
 
       try {
-        // Upload to storage
-        const fileName = `uploads/${Date.now()}_${pdf.file.name}`;
+        // Upload to storage — sanitize filename (no Thai/brackets/spaces)
+        const safeName = pdf.file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/__+/g, '_');
+        const fileName = `uploads/${Date.now()}_${safeName}`;
         const { error: uploadError } = await supabase.storage.from('lab-pdfs').upload(fileName, pdf.file);
         if (uploadError) throw uploadError;
 
