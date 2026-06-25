@@ -106,6 +106,7 @@ export default function Settings() {
   const [fetching, setFetching] = useState(false);
   const [schedules, setSchedules] = useState<string[]>([]);
   const [newTime, setNewTime] = useState('09:00');
+  void fetchInterval; void handleSaveFetchSchedule;
   const [clinic, setClinic] = useState({ clinic_name: '', phone: '', email: '', line_id: '', address: '', disclaimer: '' });
   const [clinicId, setClinicId] = useState<string | null>(null);
   const [clinicEditing, setClinicEditing] = useState(false);

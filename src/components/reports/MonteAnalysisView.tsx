@@ -65,7 +65,7 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
     ['Ferritin', 'ferritin', allTests.ferritin],
     ['Vitamin D 025-OH', 'vitamin_d', allTests.vitamin_d],
     ['TSH', 'tsh', allTests.tsh],
-    ['Free Testosterone', 'testosterone', allTests.testosterone],
+    ['Testosterone', 'testosterone', allTests.testosterone],
     ['DHEA-S', 'dheas', allTests.dheas],
     ['ANA (ANF/FANA)', 'ana', allTests.ana],
     ['RBC Morphology', 'rbc_morphology', allTests.rbc_morphology],
@@ -236,7 +236,7 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
         {/* Hormone Section */}
         {renderCategorySection('ฮอร์โมน', [
           ['TSH', allTests.tsh],
-          ['Free Testosterone', allTests.testosterone],
+          ['Testosterone', allTests.testosterone],
           ['DHEA-S', allTests.dheas],
         ], report?.test_date)}
 

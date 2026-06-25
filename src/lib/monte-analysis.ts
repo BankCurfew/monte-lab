@@ -155,23 +155,23 @@ export function generateMonteAnalysis(parsedValues: Record<string, Record<string
     }
   }
 
-  // 7. Free Testosterone
+  // 7. Testosterone
   if (allTests.testosterone) {
     const val = allTests.testosterone.value;
     if (val > 60.0) {
       hairScore -= 15;
-      items.push({ testName: 'Free Testosterone', testNameTh: 'ฮอร์โมนเพศชายอิสระ', value: val, unit: 'ng/dL', status: 'high', priority: 1,
-        interpretation: `ค่า Free Testosterone ${val} ng/dL สูงเกินเกณฑ์มาก (> 60) — ฮอร์โมนเพศชายอิสระที่แปลงเป็น DHT ตัวการหลักทำลายรากผม เสี่ยง AGA ลุกลาม`,
+      items.push({ testName: 'Testosterone', testNameTh: 'ฮอร์โมนเพศชายอิสระ', value: val, unit: 'ng/dL', status: 'high', priority: 1,
+        interpretation: `ค่า Testosterone ${val} ng/dL สูงเกินเกณฑ์มาก (> 60) — ฮอร์โมนเพศชายอิสระที่แปลงเป็น DHT ตัวการหลักทำลายรากผม เสี่ยง AGA ลุกลาม`,
         recommendation: 'ปรึกษาแพทย์เพื่อพิจารณาการรักษาด้วยยาต้าน DHT',
-        hairRelevance: 'Free Testosterone แปลงเป็น DHT (Dihydrotestosterone) ตัวการหลักที่ทำลายรากผม' });
+        hairRelevance: 'Testosterone แปลงเป็น DHT (Dihydrotestosterone) ตัวการหลักที่ทำลายรากผม' });
     } else if (val > 53.35) {
       hairScore -= 5;
-      items.push({ testName: 'Free Testosterone', testNameTh: 'ฮอร์โมนเพศชายอิสระ', value: val, unit: 'ng/dL', status: 'high', priority: 2,
-        interpretation: `ค่า Free Testosterone ${val} ng/dL — ปริ่มเกณฑ์ เฝ้าระวังอาการผมบาง`,
+      items.push({ testName: 'Testosterone', testNameTh: 'ฮอร์โมนเพศชายอิสระ', value: val, unit: 'ng/dL', status: 'high', priority: 2,
+        interpretation: `ค่า Testosterone ${val} ng/dL — ปริ่มเกณฑ์ เฝ้าระวังอาการผมบาง`,
         recommendation: 'เฝ้าระวังอาการผมบาง ตรวจติดตามเป็นระยะ', hairRelevance: 'ฮอร์โมนเพศชายใกล้เกณฑ์สูง' });
     } else {
-      items.push({ testName: 'Free Testosterone', testNameTh: 'ฮอร์โมนเพศชายอิสระ', value: val, unit: 'ng/dL', status: 'normal', priority: 3,
-        interpretation: `ค่า Free Testosterone ${val} ng/dL ปกติ (13.84-53.35)`, recommendation: '', hairRelevance: '' });
+      items.push({ testName: 'Testosterone', testNameTh: 'ฮอร์โมนเพศชายอิสระ', value: val, unit: 'ng/dL', status: 'normal', priority: 3,
+        interpretation: `ค่า Testosterone ${val} ng/dL ปกติ (13.84-53.35)`, recommendation: '', hairRelevance: '' });
     }
   }
 

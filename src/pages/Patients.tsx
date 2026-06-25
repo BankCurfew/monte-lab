@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -18,6 +19,7 @@ interface Patient {
 }
 
 export default function Patients() {
+  const { role } = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -157,8 +159,17 @@ export default function Patients() {
                 <td className="px-4 py-3 text-sm">{p.gender === 'male' ? 'ชาย' : p.gender === 'female' ? 'หญิง' : p.gender || '-'}</td>
                 <td className="px-4 py-3 text-sm">{p.date_of_birth || '-'}</td>
                 <td className="px-4 py-3 text-sm">{p.phone || '-'}</td>
-                <td className="px-4 py-3 text-sm">
+                <td className="px-4 py-3 text-sm flex gap-2">
                   <button onClick={() => handleEdit(p)} className="text-[#006B6E] hover:underline text-xs">แก้ไข</button>
+                  {role === 'admin' && (
+                    <button onClick={async () => {
+                      if (!confirm(`ลบลูกค้า ${p.first_name} ${p.last_name}?`)) return;
+                      await supabase.from('monte_reports').delete().eq('patient_id', p.id);
+                      await supabase.from('monte_patients').delete().eq('id', p.id);
+                      setPatients(prev => prev.filter(x => x.id !== p.id));
+                      toast.success('ลบลูกค้าแล้ว');
+                    }} className="text-red-400 hover:text-red-600 text-xs">ลบ</button>
+                  )}
                 </td>
               </tr>
             ))}

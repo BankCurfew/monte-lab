@@ -94,6 +94,7 @@ export default function Reports() {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">ห้อง LAB</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">แหล่ง</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">สถานะ</th>
+              {role === 'admin' && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500"></th>}
             </tr>
           </thead>
           <tbody>
@@ -119,6 +120,17 @@ export default function Reports() {
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${statusColor[latestStatus] || ''} ${latestStatus === 'analyzing' ? 'animate-pulse' : ''}`}>{statusLabel[latestStatus] || latestStatus}</span>
                   </td>
+                  {role === 'admin' && (
+                    <td className="px-4 py-3">
+                      <button onClick={async (e) => {
+                        e.stopPropagation();
+                        if (!confirm('ลบรายงานลูกค้านี้ทั้งหมด?')) return;
+                        for (const r of patientReports) { await supabase.from('monte_reports').delete().eq('id', r.id); }
+                        setReports(prev => prev.filter(r => !patientReports.some(pr => pr.id === r.id)));
+                        toast.success('ลบแล้ว');
+                      }} className="text-xs text-red-400 hover:text-red-600">ลบ</button>
+                    </td>
+                  )}
                 </tr>
               );
             })}
