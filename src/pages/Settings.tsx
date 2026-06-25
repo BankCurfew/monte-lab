@@ -15,7 +15,7 @@ interface Doctor {
 }
 
 export default function Settings() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [showAddUser, setShowAddUser] = useState(false);
   const [newEmail, setNewEmail] = useState('');
@@ -49,6 +49,36 @@ export default function Settings() {
   const handleSaveFetchSchedule = () => {
     toast.success(`ตั้งค่า auto-fetch ทุก ${fetchInterval} นาที สำหรับ ${gmailEmail}`);
   };
+
+  // Doctor profile — show own signature upload
+  if (role === 'doctor') {
+    const myDoctor = doctors.find(d => d.user_id === user?.id);
+    return (
+      <div className="max-w-3xl mx-auto space-y-8">
+        <h2 className="text-xl lg:text-2xl font-bold text-[#1A2B3C]">โปรไฟล์แพทย์</h2>
+        {myDoctor ? (
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="mb-4">
+              <p className="font-medium text-lg text-[#1A2B3C]">{myDoctor.full_name}</p>
+              <p className="text-sm text-[#5A6B7C]">เลขที่ใบอนุญาต: {myDoctor.license_no}</p>
+              <p className="text-xs text-[#94A3B8]">{myDoctor.specialty}</p>
+            </div>
+            <SignatureUpload
+              doctorId={myDoctor.id}
+              currentUrl={myDoctor.signature_url}
+              onUpdated={(url) => {
+                setDoctors(docs => docs.map(d => d.id === myDoctor.id ? { ...d, signature_url: url } : d));
+              }}
+            />
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm p-6 text-center text-[#94A3B8]">
+            ยังไม่ได้ลงทะเบียนแพทย์ในระบบ กรุณาติดต่อผู้ดูแลระบบ
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (role !== 'admin') return null;
 

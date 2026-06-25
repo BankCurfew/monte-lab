@@ -25,7 +25,7 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
   report?: { test_date?: string; lab_name?: string; status?: string; approved_at?: string };
   allReports?: { test_date?: string; lab_name?: string }[];
   parsedValues?: Record<string, Record<string, ParsedTest>>;
-  doctor?: { full_name?: string; license_no?: string } | null;
+  doctor?: { full_name?: string; license_no?: string; signature_url?: string | null } | null;
 }) {
   const allTests = parsedValues
     ? Object.values(parsedValues).reduce((acc, group) => ({ ...acc, ...group }), {} as Record<string, ParsedTest>)
@@ -188,6 +188,9 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
         {report?.status === 'approved' && doctor?.full_name ? (
           <div>
             <div style={{ marginBottom: 4, fontSize: '9pt', color: S.teal, fontWeight: 600 }}>อนุมัติโดย</div>
+            {doctor.signature_url && (
+              <img src={doctor.signature_url} alt="ลายเซ็นแพทย์" style={{ height: 48, objectFit: 'contain', marginBottom: 4 }} />
+            )}
             <div style={{ fontWeight: 700, fontSize: '10pt', color: '#222' }}>{doctor.full_name}</div>
             {doctor.license_no && <div style={{ fontSize: '7.5pt', color: '#777' }}>ใบอนุญาตเลขที่ {doctor.license_no}</div>}
             <div style={{ fontSize: '7pt', color: '#999', marginTop: 2 }}>วันที่อนุมัติ: {report.approved_at ? new Date(report.approved_at).toLocaleDateString('th-TH') : '-'}</div>
