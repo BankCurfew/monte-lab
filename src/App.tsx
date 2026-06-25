@@ -7,6 +7,7 @@ import { RoleGuard } from '@/components/auth/RoleGuard';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
+import { PDPAConsent as PDPABanner } from '@/components/PDPAConsent';
 
 const Auth = lazy(() => import('@/pages/Auth'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
@@ -16,6 +17,7 @@ const UploadReport = lazy(() => import('@/pages/UploadReport'));
 const Patients = lazy(() => import('@/pages/Patients'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const PatientDetail = lazy(() => import('@/pages/PatientDetail'));
+const SharedReport = lazy(() => import('@/pages/SharedReport'));
 
 const queryClient = new QueryClient();
 
@@ -33,6 +35,7 @@ export default function App() {
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/share/:token" element={<SharedReport />} />
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
                 <Route path="reports" element={<Reports />} />
@@ -45,6 +48,7 @@ export default function App() {
             </Routes>
           </Suspense>
           <Toaster position="top-right" richColors />
+          <PDPABanner />
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>

@@ -2,10 +2,64 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, FileText, CheckCircle, XCircle, Download, Loader2, Edit2, Save } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, XCircle, Download, Loader2, Edit2, Save, Share2, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { MonteAnalysisView } from '@/components/reports/MonteAnalysisView';
 import { generateMonteAnalysis } from '@/lib/monte-analysis';
+
+function ShareLinkButton({ reportId, patientId, patientDob }: { reportId: string; patientId: string; patientDob?: string | null }) {
+  const [shareUrl, setShareUrl] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  const handleCreate = async () => {
+    if (!patientDob) { toast.error('กรุณาตั้งวันเกิดผู้ป่วยก่อน (ใช้เป็นรหัสผ่าน)'); return; }
+    setCreating(true);
+    const dob = new Date(patientDob);
+    const pwd = `${String(dob.getDate()).padStart(2, '0')}/${String(dob.getMonth() + 1).padStart(2, '0')}/${dob.getFullYear()}`;
+
+    const { data, error } = await supabase.from('monte_share_links').insert({
+      report_id: reportId,
+      patient_id: patientId,
+      password_hash: pwd,
+    }).select('token').single();
+
+    if (error) { toast.error('สร้างลิงก์ไม่สำเร็จ'); setCreating(false); return; }
+
+    await supabase.rpc('hash_share_password', { link_token: data.token, pwd });
+
+    const url = `${window.location.origin}/share/${data.token}`;
+    setShareUrl(url);
+    setCreating(false);
+  };
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(shareUrl);
+    toast.success('คัดลอกลิงก์แล้ว');
+  };
+
+  if (shareUrl) {
+    return (
+      <div className="bg-white rounded-lg shadow p-4 space-y-2">
+        <p className="text-xs font-medium text-[#006B6E]">ลิงก์สำหรับส่งให้ลูกค้า</p>
+        <div className="flex gap-2">
+          <input value={shareUrl} readOnly className="flex-1 px-2 py-1.5 border rounded-lg text-xs bg-gray-50" />
+          <button onClick={copyLink} className="px-3 py-1.5 bg-[#00868A] text-white rounded-lg text-xs hover:bg-[#006B6E]">
+            <Copy className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <p className="text-[10px] text-[#94A3B8]">รหัสผ่าน: วันเดือนปีเกิด (dd/mm/yyyy)</p>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={handleCreate} disabled={creating}
+      className="w-full flex items-center justify-center gap-2 p-3 bg-white border border-[#00868A] text-[#006B6E] rounded-lg shadow hover:bg-[#E0F5F5] text-sm disabled:opacity-50">
+      {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
+      {creating ? 'กำลังสร้าง...' : 'สร้างลิงก์ส่งลูกค้า'}
+    </button>
+  );
+}
 
 const statusLabel: Record<string, string> = {
   pending: 'รอดำเนินการ', analyzing: 'กำลังวิเคราะห์', ready: 'รออนุมัติ',
@@ -386,6 +440,10 @@ export default function ReportDetail() {
               className="w-full flex items-center justify-center gap-2 p-3 bg-white border border-amber-300 text-amber-600 rounded-lg shadow hover:bg-amber-50 text-sm">
               <XCircle className="h-4 w-4" /> ยกเลิกการอนุมัติ
             </button>
+          )}
+
+          {report.status === 'approved' && (role === 'admin' || role === 'doctor') && (
+            <ShareLinkButton reportId={report.id} patientId={report.patient_id} patientDob={patient?.date_of_birth} />
           )}
 
           {report.status === 'rejected' && report.rejection_reason && (

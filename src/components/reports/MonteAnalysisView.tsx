@@ -41,10 +41,10 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
   const sex = patient?.gender === 'male' ? 'ชาย' : patient?.gender === 'female' ? 'หญิง' : patient?.gender || '-';
 
   const statusIcon = (flag?: string | null) => {
-    if (!flag) return <span style={{ color: S.ok, fontWeight: 700 }}>✓</span>;
-    if (flag === 'low') return <span style={{ color: S.low, fontWeight: 700 }}>⬇</span>;
-    if (flag === 'high') return <span style={{ color: S.warn, fontWeight: 700 }}>⚡</span>;
-    return <span style={{ color: S.ok }}>✓</span>;
+    if (!flag) return <span style={{ color: S.ok, fontWeight: 700 }}>ปกติ</span>;
+    if (flag === 'low') return <span style={{ color: S.low, fontWeight: 700 }}>ต่ำ</span>;
+    if (flag === 'high') return <span style={{ color: S.warn, fontWeight: 700 }}>สูง</span>;
+    return <span style={{ color: S.ok }}>ปกติ</span>;
   };
 
   const leftTests: [string, string, ParsedTest | undefined][] = [
@@ -350,7 +350,7 @@ function renderCategorySection(title: string, tests: [string, ParsedTest | undef
           {filtered.map(([name, test], i) => {
             const ref = test.ref_min != null && test.ref_max != null ? `${test.ref_min}–${test.ref_max}` : test.ref_min != null ? `≥ ${test.ref_min}` : '-';
             const sc = !test.flag ? '#27866a' : test.flag === 'high' ? '#d4a017' : '#c0392b';
-            const statusText = !test.flag ? '→ ปกติ' : test.flag === 'low' ? '⬇ ต่ำกว่าเกณฑ์' : '⬆ สูงกว่าเกณฑ์';
+            const statusText = !test.flag ? 'ปกติ' : test.flag === 'low' ? 'ต่ำกว่าเกณฑ์' : 'สูงกว่าเกณฑ์';
             return (
               <tr key={name} style={{ background: i % 2 === 1 ? '#fafcfc' : undefined }}>
                 <td style={{ padding: '2.5px 5px', borderBottom: '0.5px solid #e0e0e0', fontWeight: 600, color: '#333' }}>{name}</td>
