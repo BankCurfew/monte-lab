@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Upload, FileText, X, Eye, Sparkles, Loader2 } from 'lucide-react';
+import { Upload, FileText, X, Eye, Loader2, CheckCircle2 } from 'lucide-react';
 import { extractTextFromPdf } from '@/lib/pdf-reader';
 import { toast } from 'sonner';
 
 interface PdfFile {
   file: File;
   id: string;
-  status: 'pending' | 'uploading' | 'uploaded' | 'previewing' | 'error';
+  status: 'pending' | 'uploading' | 'analyzing' | 'done' | 'previewing' | 'error';
   preview?: ParsedPreview;
   error?: string;
   storageUrl?: string;
@@ -62,6 +62,22 @@ function parseBloodTests(fullText: string) {
   const parsedValues: Record<string, Record<string, any>> = {};
   const flags: any[] = [];
 
+  // Also detect ANA
+  const anaMatch = fullText.match(/ANA[^]*?(Negative|Positive)/i);
+  if (anaMatch) {
+    if (!parsedValues['immunology']) parsedValues['immunology'] = {};
+    parsedValues['immunology']['ana'] = {
+      value: anaMatch[1],
+      unit: '',
+      ref_min: null,
+      ref_max: null,
+      flag: anaMatch[1].toLowerCase() === 'positive' ? 'high' : null,
+    };
+    if (anaMatch[1].toLowerCase() === 'positive') {
+      flags.push({ test: 'ana', value: 'Positive', severity: 'high', note: 'ผลบวก' });
+    }
+  }
+
   for (const [key, pattern] of Object.entries(BLOOD_TEST_PATTERNS)) {
     const match = fullText.match(pattern);
     if (match) {
@@ -78,37 +94,25 @@ function parseBloodTests(fullText: string) {
   return { parsedValues, flags };
 }
 
-// Extract info from PDF text — supports Bangkok R.I.A Lab format
 function extractPreview(text: string): ParsedPreview {
-  // HN patterns
   const hnMatch = text.match(/HN[:\s]*([0-9]+-[0-9]+)/i) ||
     text.match(/HN BRIA[:\s]*([0-9]+)/i);
 
-  // Patient name — try multiple patterns
   const nameMatch = text.match(/Name[:\s]*([A-Za-zก-๙\s]+?)(?:\s*HN|\s*Age|\n)/i) ||
     text.match(/ชื่อ[:\s]*([^\n\r]+)/i) ||
     text.match(/Patient[:\s]*([^\n\r]+)/i);
 
-  // Date — Collection Date or วันที่
   const dateMatch = text.match(/Collection Date\/Time[:\s]*([0-9-]+)/i) ||
     text.match(/วันที่[:\s]*([0-9/.-]+)/i) ||
     text.match(/Date[:\s]*([0-9/.-]+\s*[A-Za-z]*\s*[0-9]*)/i);
 
-  // Lab name
   const labMatch = text.match(/(Bangkok R\.I\.A\s*(?:LAB)?|BANGKOK R\.I\.A)/i) ||
     text.match(/(BNH|Bumrungrad|รามาธิบดี|ศิริราช|จุฬา|N Health|โรงพยาบาล[^\n,]+)/i) ||
     text.match(/Hospital\/Clinic[:\s]*([^\n]+)/i);
 
-  // Age + Sex
   const ageMatch = text.match(/Age[:\s]*(\d+)\s*Y/i);
   const sexMatch = text.match(/Sex[:\s]*(Male|Female|ชาย|หญิง)/i);
 
-  // These are available for future use in Edge Function
-  void text.match(/HN BRIA[:\s]*(\d+)/i);
-  void text.match(/Reported by\s*:\s*([^\n(]+)/i);
-  void text.match(/Approved by\s*:\s*([^\n(]+)/i);
-
-  // Test detection — comprehensive
   const testPatterns = [
     'WBC', 'RBC', 'Hemoglobin', 'Hematocrit', 'Platelet', 'MCV', 'MCH', 'MCHC', 'RDW',
     'FBS', 'BUN', 'Creatinine', 'Cholesterol', 'HDL', 'LDL', 'Triglyceride',
@@ -123,7 +127,6 @@ function extractPreview(text: string): ParsedPreview {
     text.toLowerCase().includes(t.toLowerCase())
   );
 
-  // Build display name with age/sex if available
   let displayName = nameMatch?.[1]?.trim() || null;
   if (displayName && (ageMatch || sexMatch)) {
     const parts = [];
@@ -165,7 +168,6 @@ export default function UploadReport() {
 
     setFiles(prev => [...prev, ...pdfs]);
 
-    // Auto-preview each file
     pdfs.forEach(async (pdf) => {
       try {
         setFiles(prev => prev.map(f => f.id === pdf.id ? { ...f, status: 'previewing' } : f));
@@ -188,14 +190,16 @@ export default function UploadReport() {
     addFiles(e.dataTransfer.files);
   };
 
-  const uploadAll = async () => {
-    for (const pdf of files) {
-      if (pdf.status === 'uploaded') continue;
+  const uploadAndAnalyze = async () => {
+    let anySuccess = false;
 
+    for (const pdf of files) {
+      if (pdf.status === 'done') continue;
+
+      // Phase 1: Upload
       setFiles(prev => prev.map(f => f.id === pdf.id ? { ...f, status: 'uploading' } : f));
 
       try {
-        // Upload to storage — sanitize filename (no Thai/brackets/spaces)
         const safeName = pdf.file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/__+/g, '_');
         const fileName = `uploads/${Date.now()}_${safeName}`;
         const { error: uploadError } = await supabase.storage.from('lab-pdfs').upload(fileName, pdf.file);
@@ -203,7 +207,6 @@ export default function UploadReport() {
 
         const { data: urlData } = supabase.storage.from('lab-pdfs').getPublicUrl(fileName);
 
-        // Create or find patient
         let patientId: string | null = null;
         if (pdf.preview?.hn) {
           const { data: existing } = await supabase
@@ -230,7 +233,6 @@ export default function UploadReport() {
         }
 
         if (!patientId) {
-          // Create with auto HN
           const autoHn = `AUTO-${Date.now().toString(36).toUpperCase()}`;
           const nameParts = (pdf.preview?.patientName || 'Unknown').split(' ');
           const { data: newPatient } = await supabase
@@ -247,7 +249,7 @@ export default function UploadReport() {
 
         if (!patientId) throw new Error('ไม่สามารถสร้างข้อมูลผู้ป่วย');
 
-        // Create report
+        // Set status to analyzing in DB
         const { data: report, error: insertError } = await supabase
           .from('monte_reports')
           .insert({
@@ -257,69 +259,55 @@ export default function UploadReport() {
             raw_pdf_url: urlData.publicUrl,
             created_by: user?.id,
             source: 'upload',
+            status: 'analyzing',
           })
           .select('id')
           .single();
         if (insertError) throw insertError;
 
-        // Auto-analyze immediately after upload
+        // Phase 2: Analyze
+        setFiles(prev => prev.map(f => f.id === pdf.id ? { ...f, status: 'analyzing', reportId: report?.id } : f));
+
         if (report?.id) {
           const fullText = await extractTextFromPdf(pdf.file);
           const { parsedValues, flags } = parseBloodTests(fullText);
 
-          if (Object.keys(parsedValues).length > 0) {
-            await supabase
-              .from('monte_reports')
-              .update({ parsed_values: parsedValues, flags, status: 'ready' })
-              .eq('id', report.id);
-          }
+          await supabase
+            .from('monte_reports')
+            .update({
+              parsed_values: parsedValues,
+              flags,
+              status: Object.keys(parsedValues).length > 0 ? 'ready' : 'pending',
+              lab_name: pdf.preview?.labName || null,
+            })
+            .eq('id', report.id);
         }
 
-        setFiles(prev => prev.map(f => f.id === pdf.id ? { ...f, status: 'uploaded', storageUrl: urlData.publicUrl, reportId: report?.id } : f));
+        // Phase 3: Done with success animation
+        setFiles(prev => prev.map(f => f.id === pdf.id ? { ...f, status: 'done', storageUrl: urlData.publicUrl, reportId: report?.id } : f));
+        anySuccess = true;
       } catch (err: any) {
         setFiles(prev => prev.map(f => f.id === pdf.id ? { ...f, status: 'error', error: err.message } : f));
       }
     }
 
-    const uploaded = files.filter(f => f.status !== 'error').length;
-    if (uploaded > 0) {
-      toast.success(`อัปโหลด ${uploaded} ไฟล์สำเร็จ`);
+    if (anySuccess) {
+      toast.success('อัปโหลดและวิเคราะห์เสร็จสิ้น!', {
+        description: 'กรุณาตรวจสอบผลวิเคราะห์ในหน้ารายงาน',
+        action: { label: 'ดูผลวิเคราะห์', onClick: () => navigate('/reports') },
+        duration: 5000,
+      });
     }
   };
 
-  const analyzeAll = async () => {
-    toast.info('กำลังวิเคราะห์ผลเลือด...');
-
-    for (const pdf of files) {
-      if (!pdf.reportId || !pdf.preview) continue;
-
-      const fullText = await extractTextFromPdf(pdf.file);
-      const { parsedValues, flags } = parseBloodTests(fullText);
-
-      await supabase
-        .from('monte_reports')
-        .update({
-          parsed_values: parsedValues,
-          flags,
-          status: Object.keys(parsedValues).length > 0 ? 'ready' : 'pending',
-          lab_name: pdf.preview.labName || null,
-        })
-        .eq('id', pdf.reportId);
-    }
-
-    toast.success('วิเคราะห์เสร็จสิ้น');
-    navigate('/reports');
-  };
-
-  const allUploaded = files.length > 0 && files.every(f => f.status === 'uploaded');
   const hasFiles = files.length > 0;
-  const uploading = files.some(f => f.status === 'uploading');
+  const allDone = files.length > 0 && files.every(f => f.status === 'done' || f.status === 'error');
+  const isProcessing = files.some(f => f.status === 'uploading' || f.status === 'analyzing');
 
   return (
     <div className="max-w-3xl mx-auto">
       <h2 className="text-xl lg:text-2xl font-bold text-[#1A2B3C] mb-6">อัปโหลดผลตรวจเลือด</h2>
 
-      {/* Drop zone */}
       <div
         onDragOver={e => { e.preventDefault(); setDragActive(true); }}
         onDragLeave={() => setDragActive(false)}
@@ -330,25 +318,29 @@ export default function UploadReport() {
       >
         <Upload className="h-10 w-10 text-[#94A3B8] mx-auto mb-3" />
         <p className="text-sm text-[#5A6B7C]">ลากไฟล์ PDF มาวางที่นี่ (หลายไฟล์ได้)</p>
-        <p className="text-xs text-[#94A3B8] mt-1">ระบบจะอ่านข้อมูลจาก PDF อัตโนมัติ</p>
+        <p className="text-xs text-[#94A3B8] mt-1">ระบบจะอัปโหลด+วิเคราะห์อัตโนมัติ</p>
         <label className="inline-block mt-3 px-5 py-2.5 bg-[#00868A] text-white rounded-xl text-sm font-medium cursor-pointer hover:bg-[#006B6E] shadow-sm">
           เลือกไฟล์
           <input type="file" accept=".pdf" multiple onChange={e => e.target.files && addFiles(e.target.files)} className="hidden" />
         </label>
       </div>
 
-      {/* File list with previews */}
       {hasFiles && (
         <div className="space-y-4 mb-6">
           {files.map(pdf => (
-            <div key={pdf.id} className={`bg-white rounded-xl shadow-sm border overflow-hidden ${
-              pdf.status === 'error' ? 'border-red-300' : pdf.status === 'uploaded' ? 'border-emerald-300' : 'border-[#E2E8F0]'
+            <div key={pdf.id} className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all ${
+              pdf.status === 'error' ? 'border-red-300' :
+              pdf.status === 'done' ? 'border-emerald-300 animate-[fadeGreen_0.5s_ease-in-out]' :
+              pdf.status === 'analyzing' ? 'border-blue-300 shadow-blue-100 shadow-md' :
+              'border-[#E2E8F0]'
             }`}>
-              {/* File header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-[#E2E8F0]">
                 <div className="flex items-center gap-3">
                   <FileText className={`h-5 w-5 flex-shrink-0 ${
-                    pdf.status === 'uploaded' ? 'text-emerald-600' : pdf.status === 'error' ? 'text-red-500' : 'text-[#006B6E]'
+                    pdf.status === 'done' ? 'text-emerald-600' :
+                    pdf.status === 'error' ? 'text-red-500' :
+                    pdf.status === 'analyzing' ? 'text-blue-600' :
+                    'text-[#006B6E]'
                   }`} />
                   <div>
                     <p className="text-sm font-medium text-[#1A2B3C] truncate max-w-xs">{pdf.file.name}</p>
@@ -356,17 +348,39 @@ export default function UploadReport() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {pdf.status === 'uploading' && <Loader2 className="h-4 w-4 animate-spin text-[#00868A]" />}
-                  {pdf.status === 'uploaded' && <span className="text-xs text-emerald-600 font-medium">✓ อัปโหลดแล้ว</span>}
+                  {pdf.status === 'uploading' && (
+                    <span className="flex items-center gap-1.5 text-xs text-[#00868A]">
+                      <Loader2 className="h-4 w-4 animate-spin" /> กำลังอัปโหลด...
+                    </span>
+                  )}
+                  {pdf.status === 'analyzing' && (
+                    <span className="flex items-center gap-1.5 text-xs text-blue-600 font-medium">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="animate-pulse">กำลังวิเคราะห์ผลเลือด...</span>
+                    </span>
+                  )}
+                  {pdf.status === 'done' && (
+                    <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+                      <CheckCircle2 className="h-4 w-4" /> วิเคราะห์เสร็จสิ้น
+                    </span>
+                  )}
                   {pdf.status === 'error' && <span className="text-xs text-red-500">{pdf.error}</span>}
                   {pdf.status === 'previewing' && <Loader2 className="h-4 w-4 animate-spin text-[#94A3B8]" />}
-                  <button onClick={() => removeFile(pdf.id)} className="p-1 hover:bg-red-50 rounded">
-                    <X className="h-4 w-4 text-[#94A3B8] hover:text-red-500" />
-                  </button>
+                  {(pdf.status === 'pending' || pdf.status === 'previewing') && (
+                    <button onClick={() => removeFile(pdf.id)} className="p-1 hover:bg-red-50 rounded">
+                      <X className="h-4 w-4 text-[#94A3B8] hover:text-red-500" />
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Preview data extracted from PDF */}
+              {/* Analyzing progress bar */}
+              {pdf.status === 'analyzing' && (
+                <div className="h-1 bg-blue-100 overflow-hidden">
+                  <div className="h-full bg-blue-500 animate-[progressIndeterminate_1.5s_ease-in-out_infinite] w-1/3 rounded-full" />
+                </div>
+              )}
+
               {pdf.preview && (
                 <div className="px-4 py-3 bg-[#F8FAFB]">
                   <div className="flex items-center gap-1 mb-2">
@@ -404,25 +418,24 @@ export default function UploadReport() {
         </div>
       )}
 
-      {/* Action buttons */}
       {hasFiles && (
         <div className="flex gap-3">
-          {!allUploaded ? (
+          {!allDone ? (
             <button
-              onClick={uploadAll}
-              disabled={uploading}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#00868A] text-white rounded-xl font-medium hover:bg-[#006B6E] disabled:opacity-50 shadow-sm"
+              onClick={uploadAndAnalyze}
+              disabled={isProcessing}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#00868A] text-white rounded-xl font-medium hover:bg-[#006B6E] disabled:opacity-50 shadow-sm transition-all"
             >
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {uploading ? 'กำลังอัปโหลด...' : `อัปโหลด ${files.filter(f => f.status !== 'uploaded').length} ไฟล์`}
+              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {isProcessing ? 'กำลังประมวลผล...' : `อัปโหลดและวิเคราะห์ ${files.filter(f => f.status !== 'done').length} ไฟล์`}
             </button>
           ) : (
             <button
-              onClick={analyzeAll}
+              onClick={() => navigate('/reports')}
               className="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 shadow-sm"
             >
-              <Sparkles className="h-4 w-4" />
-              วิเคราะห์ผลเลือดทั้งหมด ({files.length} ไฟล์)
+              <CheckCircle2 className="h-4 w-4" />
+              ดูผลวิเคราะห์ทั้งหมด
             </button>
           )}
         </div>
