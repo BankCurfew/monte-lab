@@ -29,6 +29,7 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
   doctor?: { full_name?: string; license_no?: string; signature_url?: string | null } | null;
   role?: string | null;
   onEditRecommendation?: (idx: number, text: string) => void;
+  customRecommendations?: Record<string, string>;
 }) {
   const allTests = parsedValues
     ? Object.values(parsedValues).reduce((acc, group) => ({ ...acc, ...group }), {} as Record<string, ParsedTest>)
@@ -160,7 +161,7 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
       </div>
 
       {/* ── RECOMMENDATIONS ── */}
-      <RecommendationSection analysis={analysis} role={role} onEditRecommendation={onEditRecommendation} />
+      <RecommendationSection analysis={analysis} role={role} onEditRecommendation={onEditRecommendation} customRecommendations={customRecommendations} />
 
       {/* ── DISCLAIMER ── */}
       <div style={{ marginTop: 6, fontSize: '7pt', color: '#888', borderLeft: `3px solid ${S.teal}`, paddingLeft: 8 }}>
@@ -257,8 +258,8 @@ export function MonteAnalysisView({ analysis, patient, report, allReports, parse
   );
 }
 
-function RecommendationSection({ analysis, role, onEditRecommendation }: {
-  analysis: MonteAnalysis; role?: string | null; onEditRecommendation?: (idx: number, text: string) => void;
+function RecommendationSection({ analysis, role, onEditRecommendation, customRecommendations }: {
+  analysis: MonteAnalysis; role?: string | null; onEditRecommendation?: (idx: number, text: string) => void; customRecommendations?: Record<string, string>;
 }) {
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
@@ -275,6 +276,7 @@ function RecommendationSection({ analysis, role, onEditRecommendation }: {
         const bg = numColors[idx] || '#2A8C8C';
         const hc = headingColors[idx] || '#2A8C8C';
         const isEditing = editIdx === idx;
+        const customText = customRecommendations?.[String(idx)];
 
         return (
           <div key={idx} style={{ display: 'flex', marginBottom: 6, borderRadius: 4, overflow: 'hidden', background: '#fafafa', border: '0.5px solid #e8e8e8' }}>
@@ -285,7 +287,7 @@ function RecommendationSection({ analysis, role, onEditRecommendation }: {
                   {item.testName} ({item.testNameTh}) — ค่า {item.value} {item.unit}
                 </div>
                 {role === 'doctor' && onEditRecommendation && !isEditing && (
-                  <button onClick={() => { setEditIdx(idx); setEditText(`${item.interpretation}\n💊 ${item.recommendation}`); }}
+                  <button onClick={() => { setEditIdx(idx); setEditText(customText || `${item.interpretation}\n💊 ${item.recommendation}`); }}
                     style={{ background: '#fff', border: '1px solid #2A8C8C', borderRadius: 6, padding: '3px 10px', fontSize: '7.5pt', color: '#2A8C8C', cursor: 'pointer', whiteSpace: 'nowrap', marginLeft: 8 }}>
                     แก้ไข
                   </button>
@@ -307,6 +309,8 @@ function RecommendationSection({ analysis, role, onEditRecommendation }: {
                     </button>
                   </div>
                 </div>
+              ) : customText ? (
+                <div style={{ marginTop: 2, color: '#444', whiteSpace: 'pre-wrap' }}>{customText}</div>
               ) : (
                 <>
                   <p style={{ marginTop: 2, color: '#444' }}>{item.interpretation}</p>
