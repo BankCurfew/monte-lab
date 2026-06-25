@@ -175,7 +175,7 @@ export default function ReportDetail() {
             {renderBloodTests()}
           </div>
 
-          {monteAnalysis && <MonteAnalysisView analysis={monteAnalysis} />}
+          {monteAnalysis && <MonteAnalysisView analysis={monteAnalysis} patient={patient} report={report} allReports={allPatientReports} />}
         </div>
 
         <div className="space-y-4">
