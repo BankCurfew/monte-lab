@@ -65,18 +65,26 @@ export default function ReportDetail() {
     [aggregatedParsed]
   );
 
+  const [patient, setPatient] = useState<any>(null);
+  const [editingPatient, setEditingPatient] = useState(false);
+  const [patientForm, setPatientForm] = useState({ first_name: '', last_name: '', hn: '', date_of_birth: '', gender: '', phone: '' });
+
+  useEffect(() => {
+    if (report?.monte_patients) {
+      setPatient(report.monte_patients);
+      setPatientForm({
+        first_name: report.monte_patients.first_name || '',
+        last_name: report.monte_patients.last_name || '',
+        hn: report.monte_patients.hn || '',
+        date_of_birth: report.monte_patients.date_of_birth || '',
+        gender: report.monte_patients.gender || '',
+        phone: report.monte_patients.phone || '',
+      });
+    }
+  }, [report]);
+
   if (!report) return <div className="text-center py-12 text-gray-400">กำลังโหลด...</div>;
 
-  const [patient, setPatient] = useState(report.monte_patients);
-  const [editingPatient, setEditingPatient] = useState(false);
-  const [patientForm, setPatientForm] = useState({
-    first_name: report.monte_patients?.first_name || '',
-    last_name: report.monte_patients?.last_name || '',
-    hn: report.monte_patients?.hn || '',
-    date_of_birth: report.monte_patients?.date_of_birth || '',
-    gender: report.monte_patients?.gender || '',
-    phone: report.monte_patients?.phone || '',
-  });
   const parsed = aggregatedParsed;
 
   const handleSavePatient = async () => {
