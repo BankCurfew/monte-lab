@@ -2,8 +2,88 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { SignatureUpload } from '@/components/doctors/SignatureUpload';
-import { UserPlus, Mail, RefreshCw, Clock } from 'lucide-react';
+import { UserPlus, Mail, RefreshCw, Clock, Save } from 'lucide-react';
 import { toast } from 'sonner';
+
+function DoctorProfile({ doctor, onUpdate }: { doctor: Doctor | undefined; onUpdate: (d: Doctor) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ full_name: '', license_no: '', specialty: '' });
+
+  useEffect(() => {
+    if (doctor) setForm({ full_name: doctor.full_name, license_no: doctor.license_no, specialty: doctor.specialty });
+  }, [doctor]);
+
+  if (!doctor) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-8">
+        <h2 className="text-xl lg:text-2xl font-bold text-[#1A2B3C]">โปรไฟล์แพทย์</h2>
+        <div className="bg-white rounded-xl shadow-sm p-6 text-center text-[#94A3B8]">
+          ยังไม่ได้ลงทะเบียนแพทย์ในระบบ กรุณาติดต่อผู้ดูแลระบบ
+        </div>
+      </div>
+    );
+  }
+
+  const handleSave = async () => {
+    const { error } = await supabase.from('monte_doctors').update(form).eq('id', doctor.id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success('บันทึกข้อมูลแล้ว');
+      onUpdate({ ...doctor, ...form });
+      setEditing(false);
+    }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-8">
+      <h2 className="text-xl lg:text-2xl font-bold text-[#1A2B3C]">โปรไฟล์แพทย์</h2>
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        {editing ? (
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="block text-xs text-[#94A3B8] mb-1">ชื่อ-นามสกุล</label>
+              <input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })}
+                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00868A]" />
+            </div>
+            <div>
+              <label className="block text-xs text-[#94A3B8] mb-1">เลขที่ใบอนุญาต</label>
+              <input value={form.license_no} onChange={e => setForm({ ...form, license_no: e.target.value })}
+                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00868A]" />
+            </div>
+            <div>
+              <label className="block text-xs text-[#94A3B8] mb-1">ความเชี่ยวชาญ</label>
+              <input value={form.specialty} onChange={e => setForm({ ...form, specialty: e.target.value })}
+                className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00868A]" />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setEditing(false)} className="px-4 py-2 text-sm text-[#5A6B7C]">ยกเลิก</button>
+              <button onClick={handleSave} className="flex items-center gap-1.5 px-4 py-2 bg-[#00868A] text-white rounded-xl text-sm hover:bg-[#006B6E]">
+                <Save className="h-4 w-4" /> บันทึก
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="font-medium text-lg text-[#1A2B3C]">{doctor.full_name}</p>
+                <p className="text-sm text-[#5A6B7C]">เลขที่ใบอนุญาต: {doctor.license_no}</p>
+                <p className="text-xs text-[#94A3B8]">{doctor.specialty}</p>
+              </div>
+              <button onClick={() => setEditing(true)}
+                className="px-3 py-1.5 text-sm border border-[#00868A] text-[#006B6E] rounded-xl hover:bg-[#E0F5F5]">แก้ไข</button>
+            </div>
+          </div>
+        )}
+        <SignatureUpload
+          doctorId={doctor.id}
+          currentUrl={doctor.signature_url}
+          onUpdated={(url) => onUpdate({ ...doctor, signature_url: url })}
+        />
+      </div>
+    </div>
+  );
+}
 
 interface Doctor {
   id: string;
@@ -50,34 +130,10 @@ export default function Settings() {
     toast.success(`ตั้งค่า auto-fetch ทุก ${fetchInterval} นาที สำหรับ ${gmailEmail}`);
   };
 
-  // Doctor profile — show own signature upload
+  // Doctor profile — show own signature upload + editable details
   if (role === 'doctor') {
     const myDoctor = doctors.find(d => d.user_id === user?.id);
-    return (
-      <div className="max-w-3xl mx-auto space-y-8">
-        <h2 className="text-xl lg:text-2xl font-bold text-[#1A2B3C]">โปรไฟล์แพทย์</h2>
-        {myDoctor ? (
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="mb-4">
-              <p className="font-medium text-lg text-[#1A2B3C]">{myDoctor.full_name}</p>
-              <p className="text-sm text-[#5A6B7C]">เลขที่ใบอนุญาต: {myDoctor.license_no}</p>
-              <p className="text-xs text-[#94A3B8]">{myDoctor.specialty}</p>
-            </div>
-            <SignatureUpload
-              doctorId={myDoctor.id}
-              currentUrl={myDoctor.signature_url}
-              onUpdated={(url) => {
-                setDoctors(docs => docs.map(d => d.id === myDoctor.id ? { ...d, signature_url: url } : d));
-              }}
-            />
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm p-6 text-center text-[#94A3B8]">
-            ยังไม่ได้ลงทะเบียนแพทย์ในระบบ กรุณาติดต่อผู้ดูแลระบบ
-          </div>
-        )}
-      </div>
-    );
+    return <DoctorProfile doctor={myDoctor} onUpdate={(updated) => setDoctors(docs => docs.map(d => d.id === updated.id ? updated : d))} />;
   }
 
   if (role === 'staff') {
